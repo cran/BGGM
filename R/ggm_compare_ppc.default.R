@@ -1,246 +1,565 @@
-#' Compare GGMs with the Posterior Predictive Distribution
-#' @name ggm_compare_ppc.default
-#' @description Compare GGMs with the posterior predictive distribution. The method assume group equality, and the predictive check
-#' allows for testing whether that assumption should be modified--i.e., the GGMs are actually different. The current test statistic available is
-#' Kullback-Leibler divergence, which in this case, can be understood as a likelihood ratio for multivariate normal distributions. There are
-#' two options: (1) 'global' and (2) 'nodewise.' The former tests the entire GGM, whereas the latter allows for testing specific nodes (variables)
-#' in the model.
+#' @title GGM Compare: Posterior Predictive Check
 #'
-#' @param ... data matrices (\emph{n} by  \emph{p}). Requires at least two.
-#' @param type \code{type = "global"} for testing the entire precision matrix. \code{type = "nodewise"} for testing each node (i.e., variable)
-#' @param iter number of replicated data sets. default is \code{iter = 1000}.
-#' @param cores number of cores for parallel computing. The default is 2, but this can be adjusted.
+#' @description
+#' Compare GGMs with a posterior predicitve check \insertCite{gelman1996posterior}{BGGM}.
+#' This method was introduced in \insertCite{williams2020comparing;textual}{BGGM}. Currently,
+#' there is a \code{global} (the entire GGM) and a \code{nodewise} test. The default
+#' is to compare GGMs with respect to the posterior predictive distribution of Kullback
+#' Leibler divergence and the sum of squared errors. It is also possible to compare the
+#' GGMs with a user defined test-statistic.
+#'
+#' @name ggm_compare_ppc
 #'
 #'
-#' @return list of class \code{ggm_compare_ppc}:
+#' @param ... At least two matrices (or data frames) of dimensions \emph{n} (observations) by  \emph{p} (variables).
+#'
+#' @param test Which test should be performed (defaults to \code{"global"}) ? The options include
+#'             \code{global} and \code{nodewise}.
+#'
+#'
+#' @param iter Number of replicated datasets used to construct the predictivie distribution
+#'            (defaults to 5000).
+#'
+#' @param FUN An optional function for comparing GGMs that returns a number. See \strong{Details}.
+#'
+#' @param custom_obs Number corresponding to the observed score for comparing the GGMs. This is
+#'                   required if a function is provided in \code{FUN}. See \strong{Details}.
+#'
+#' @param loss Logical. If a function is provided, is the measure a "loss function"
+#'             (i.e., a large score is bad thing). This determines how the \emph{p}-value
+#'             is computed. See \strong{Details}.
+#'
+#' @param progress Logical. Should a progress bar be included (defaults to \code{TRUE}) ?
+#'
+#' @references
+#'
+#' \insertAllCited{}
+#'
+#' @details
+#'
+#' The \code{FUN} argument allows for a user defined test-statisic (the measure used to compare the GGMs).
+#' The function must include only two agruments, each of which corresponds to a dataset. For example,
+#' \code{f <- function(Yg1, Yg2)}, where each Y is dataset of dimensions \emph{n} by \emph{p}. The
+#' groups are then compare within the function, returning a single number. An example is provided below.
+#'
+#' Further, when using a custom function care must be taken when specifying the argument \code{loss}.
+#' We recommended to visualize the results with \code{plot} to ensure the \emph{p}-value was computed
+#' in the right direction.
+#'
+#' @note
+#'
+#' \strong{Interpretation}:
+#'
+#' The primary test-statistic is symmetric KL-divergence that is termed Jensen-Shannon divergence (JSD).
+#' This is in essence a likelihood ratio that provides the "distance" between two multivariate normal
+#' distributions. The basic idea is to (1) compute the posterior predictive distribution, assuming group equality
+#' (the null model). This provides the error that we would expect to see under the null model; (2) compute
+#' JSD for the observed groups; and (3) compare the observed JSD to the posterior predictive distribution,
+#' from which a posterior predictive \emph{p}-value is computed.
+#'
+#' For the \code{global} check, the sum of squared error is also provided.
+#' This is computed from the partial correlation matrices and it is analagous
+#' to the strength test in \insertCite{van2017comparing;textual}{BGGM}. The \code{nodewise}
+#' test compares the posterior predictive distribution for each node. This is based on the correspondence
+#' between the inverse covariance matrix and multiple regresssion \insertCite{kwan2014regression,Stephens1998}{BGGM}.
+#'
+#' If the null model is \code{not} rejected, note that this does \code{not} provide evidence for equality!
+#' Further, if the null model is rejected, this means that the assumption of group equality is not tenable--the
+#' groups are different.
+#'
+#' \strong{Alternative Methods}:
+#'
+#' There are several methods in \strong{BGGM} for comparing groups. See
+#' \code{\link{ggm_compare_estimate}} (posterior differences for the
+#' partial correlations), \code{\link{ggm_compare_explore}} (exploratory hypothesis testing),
+#' and \code{\link{ggm_compare_confirm}} (confirmatory hypothesis testing).
+#'
+#'
+#' @return The returned object of class \code{ggm_compare_ppc} contains a lot of information that
+#'         is used for printing and plotting the results. For users of \strong{BGGM}, the following
+#'         are the useful objects:
+#'
+#' \code{test = "global"}
 #'
 #' \itemize{
-#' \item \code{pvalue} posterior predictive p-values
-#' \item \code{obs_jsd} observed symmetric KL divergence (Jensen-Shannon divergence)
-#' \item \code{predictive_risk} list of predictive distributions
-#' \item  \code{info} list of information about the data matrices
+#'
+#' \item \code{ppp_jsd} posterior predictive \emph{p}-values (JSD).
+#'
+#' \item \code{ppp_sse} posterior predictive \emph{p}-values (SSE).
+#'
+#' \item \code{predictive_jsd} list containing the posterior predictive distributions (JSD).
+#'
+#' \item \code{predictive_sse} list containing the posterior predictive distributions (SSE).
+#'
+#' \item \code{obs_jsd} list containing the observed error (JSD).
+#'
+#' \item \code{obs_sse} list containing the observed error (SSE).
+#'
+#'}
+#'
+#'
+#' \code{test = "nodewise"}
 #'
 #' \itemize{
-#' \item \code{dat} list containing the data matrices
-#' \item \code{dat_info} sample size for each data matrix
-#' \item \code{pairwise} matrix of pairwise combinations
+#'
+#' \item \code{ppp_jsd} posterior predictive \emph{p}-values (JSD).
+#'
+#' \item \code{predictive_jsd} list containing the posterior predictive distributions (JSD).
+#'
+#' \item \code{obs_jsd} list containing the observed error (JSD).
+#'
 #' }
 #'
-#' \item \code{names} contrast names (e.g.., Yg1  vs Yg2)
-#' \item \code{iter}  number of posterior samples
-#' \item \code{type} "global"
-#' \item \code{call} match.call()
+#' \code{FUN = f()}
+#'
+#' \itemize{
+#'
+#' \item \code{ppp_custom} posterior predictive \emph{p}-values (custom).
+#'
+#' \item \code{predictive_custom} posterior predictive distributions (custom).
+#'
+#' \item \code{obs_custom} observed error (custom).
+#'
 #' }
 #'
-#'
-
-#'
-#' @note This method is Bayesian, as it relies on the posterior predictive distribution.
-#' That said, there are clear parallels to frequentist testing-e.g., assuming group
-#' equality and critical regions. Most importantly, this method CANNOT provide evidence
-#' for the null hypothesis. Thus it can only reject the underlying assumption of group equality.
-#' For gaining (relative) evidence for the null hypothesis see..
-#'
-#' see methods(class = "ggm_compare_ppc")
 #'
 #' @examples
+#'
 #' \donttest{
-#' # Assume null is true
-#' Y1 <- MASS::mvrnorm(500, rep(0, 16), Sigma = diag(16))
-#' Y2 <- MASS::mvrnorm(500, rep(0, 16), Sigma = diag(16))
-#' Y3 <- MASS::mvrnorm(500, rep(0, 16), Sigma = diag(16))
+#' # note: iter = 250 for demonstrative purposes
 #'
-#' # global predictive check (iter = 50 for demonstrative purposes)
-#' ggm_ppc <- ggm_compare_ppc(Y1, Y2, Y3,
-#'                            type = "global", iter = 50)
-#' summary(ggm_ppc)
+#' # data
+#' Y <- bfi
 #'
-#' plot(ggm_ppc)
+#' #############################
+#' ######### global ############
+#' #############################
 #'
-#' # nodewise
-#' ggm_ppc  <- ggm_compare_ppc(Y1, Y2, Y3, type = "nodewise", iter = 50)
 #'
-#' plot(ggm_ppc, log = TRUE)
+#' # males
+#' Ym <- subset(Y, gender == 1,
+#'              select = - c(gender, education))
+#'
+#' # females
+#'
+#' Yf <- subset(Y, gender == 2,
+#'              select = - c(gender, education))
+#'
+#'
+#' global_test <- ggm_compare_ppc(Ym, Yf,
+#'                                iter = 250)
+#'
+#' global_test
+#'
+#'
+#' #############################
+#' ###### custom function ######
+#' #############################
+#' # example 1
+#'
+#' # maximum difference van Borkulo et al. (2017)
+#'
+#' f <- function(Yg1, Yg2){
+#'
+#' # remove NA
+#' x <- na.omit(Yg1)
+#' y <- na.omit(Yg2)
+#'
+#' # nodes
+#' p <- ncol(Yg1)
+#'
+#' # identity matrix
+#' I_p <- diag(p)
+#'
+#' # partial correlations
+#'
+#' pcor_1 <- -(cov2cor(solve(cor(x))) - I_p)
+#' pcor_2 <- -(cov2cor(solve(cor(y))) - I_p)
+#'
+#' # max difference
+#' max(abs((pcor_1[upper.tri(I_p)] - pcor_2[upper.tri(I_p)])))
+#'
 #' }
+#'
+#' # observed difference
+#' obs <- f(Ym, Yf)
+#'
+#' global_max <- ggm_compare_ppc(Ym, Yf,
+#'                               iter = 250,
+#'                               FUN = f,
+#'                               custom_obs = obs,
+#'                               progress = FALSE)
+#'
+#' global_max
+#'
+#'
+#' # example 2
+#' # Hamming distance (squared error for adjacency)
+#'
+#' f <- function(Yg1, Yg2){
+#'
+#' # remove NA
+#' x <- na.omit(Yg1)
+#' y <- na.omit(Yg2)
+#'
+#' # nodes
+#' p <- ncol(x)
+#'
+#' # identity matrix
+#' I_p <- diag(p)
+#'
+#' fit1 <-  estimate(x, analytic = TRUE)
+#' fit2 <-  estimate(y, analytic = TRUE)
+#'
+#' sel1 <- select(fit1)
+#' sel2 <- select(fit2)
+#'
+#' sum((sel1$adj[upper.tri(I_p)] - sel2$adj[upper.tri(I_p)])^2)
+#'
+#'}
+#'
+#' # observed difference
+#' obs <- f(Ym, Yf)
+#'
+#' global_hd <- ggm_compare_ppc(Ym, Yf,
+#'                             iter = 250,
+#'                             FUN = f,
+#'                             custom_obs  = obs,
+#'                             progress = FALSE)
+#'
+#' global_hd
+#'
+#'
+#' #############################
+#' ########  nodewise ##########
+#' #############################
+#'
+#' nodewise <- ggm_compare_ppc(Ym, Yf, iter = 250,
+#'                            test = "nodewise")
+#'
+#' nodewise
+#'
+#' }
+#'
 #' @export
-ggm_compare_ppc <- function(..., type = "global", iter = 5000, cores = 1){
+ggm_compare_ppc <- function(...,
+                            test = "global",
+                            iter = 5000,
+                            FUN = NULL,
+                            custom_obs = NULL,
+                            loss = TRUE,
+                            progress = TRUE
+                            ){
 
-  if(type == "global"){
+  # data information
+  info <- Y_combine(...)
 
-    info <- Y_combine(...)
+  # number of groups
+  groups <- length(info$dat)
 
-    groups <- length(info$dat)
 
-    if(groups < 2){
-      stop("must have (at least) two groups")
+  if (groups < 2) {
+
+    stop("must have (at least) two groups")
+
     }
 
-    Y_G <- rbind(info$dat)
+  n_total <- sum(info$dat_info$n)
 
-    n_total <- sum(info$dat_info$n)
+  Y_G <- scale(do.call(rbind, info$dat), scale = T)
 
-    Y_G <- scale(do.call(rbind, info$dat), scale = T)
+  # inverse scatter matrix
+  S_G <- solve(t(Y_G) %*% Y_G)
 
-    # inverse scatter matrix
-    S_G <- solve(t(Y_G) %*% Y_G)
+  # M_0 posterior (group equality)
+  post <- rWishart(iter, n_total - 1, S_G)
 
-    # M_0 posterior (group equality)
-    post <- rWishart(iter, n_total - 1, S_G)
+  p <- info$dat_info$p[1]
 
-    p <- info$dat_info$p[1]
+    if(is.null(FUN)){
 
-    predictive_risk <- list()
+      custom <- FALSE
+
+      if (test == "global") {
+
+      # jsd = symmetric KLD
+      predictive_jsd <- list()
+
+      # strength = sum of squares
+      predictive_ss <- list()
+
+      # observed error
+      obs_jsd <- list()
+      obs_ss <- list()
+      nms <- list()
+
+
+      for (i in 1:nrow(info$pairwise)) {
+
+        message(paste0("BGGM: Predictive Check ", "(Contrast ", i ,")"))
+
+        n1 <- info$dat_info$n[info$pairwise[i, 1]]
+
+        n2 <- info$dat_info$n[info$pairwise[i, 2]]
+
+        pp_check <- .Call(
+          "_BGGM_ppc_helper_fast",
+          PACKAGE = "BGGM",
+          Theta = post,
+          n1 = n1,
+          n2 = n2,
+          p = p,
+          BF_cut = 3,
+          dens = 1,
+          ppc_ss = TRUE,
+          ppc_cors = FALSE,
+          ppc_hd = FALSE
+        )
+
+        predictive_jsd[[i]] <- pp_check$kl
+        predictive_ss[[i]]  <- pp_check$ss
+
+        # data set 2
+        y1 <- info$dat[info$pairwise[i, 1]][[1]]
+
+        # data set 2
+        y2 <- info$dat[info$pairwise[i, 2]][[1]]
+
+        # observed jsd
+        obs_jsd[[i]]  <-
+          0.5 *  KL(unbiased_cov(y1), unbiased_cov(y2)) +
+          0.5 *  KL(unbiased_cov(y2), unbiased_cov(y1))
+
+        # observed sum of squared error
+        obs_ss[[i]] <- sum((cov2cor(solve(cor(y1))) - cov2cor(solve(cor(y2)))) ^ 2) * 0.5
+
+        # names
+        nms[[i]] <-
+          paste("Yg",
+                info$pairwise[i, ],
+                sep = "",
+                collapse = " vs ")
+
+      }
+
+      message("BGGM: Finished")
+
+      # results jsd
+      results_jsd <- do.call(cbind.data.frame, predictive_jsd)
+
+      # results ss
+      results_ss <- do.call(cbind.data.frame, predictive_ss)
+
+      # posterior predictive p-value
+      ppp_jsd    <-   sapply(1:nrow(info$pairwise), function(x)
+                             mean(na.omit(results_jsd[, x])  > obs_jsd[[x]]))
+
+      ppp_ss    <-   sapply(1:nrow(info$pairwise), function(x)
+                            mean(na.omit(results_ss[, x])  > obs_ss[[x]]))
+
+
+      returned_object <- list(
+        ppp_jsd = ppp_jsd,
+        ppp_sse = ppp_ss,
+        obs_jsd = obs_jsd,
+        obs_sse  = obs_ss,
+        info = info,
+        names = nms,
+        iter = iter,
+        test = test,
+        call = match.call(),
+        predictive_jsd = predictive_jsd,
+        predictive_sse = predictive_ss,
+        custom = custom
+      )
+
+  } else if (test == "nodewise") {
+
+    predictive_jsd <- list()
 
     obs_jsd <- list()
 
     nms <- list()
 
-    for(i in 1:nrow(info$pairwise)){
+    for (i in 1:nrow(info$pairwise)) {
 
-      n1 <- info$dat_info$n[info$pairwise[i,1]]
+      message(paste0("BGGM: Predictive Check ", "(Contrast ", i ,")"))
 
-      n2 <- info$dat_info$n[info$pairwise[i,2]]
+      n1 <- info$dat_info$n[info$pairwise[i, 1]]
 
-      ppc  <-  list(unlist(lapply(1:iter, function(x) Mo_risk_help(x, post, n1, n2, p))))
+      n2 <- info$dat_info$n[info$pairwise[i, 2]]
 
-      predictive_risk[[i]] <- ppc
+      pp_check <-  .Call(
+          "_BGGM_ppc_helper_nodewise_fast",
+          PACKAGE = "BGGM",
+          Theta = post,
+          n1 = n1,
+          n2 = n2,
+          p = p
+        )
 
-      y1 <- info$dat[info$pairwise[i,1]][[1]]
+        predictive_jsd[[i]] <- pp_check$kl
 
-      y2 <- info$dat[info$pairwise[i,2]][[1]]
+        }
 
-      obs <- 0.5 * KL(unbiased_cov(y1), unbiased_cov(y2)) +
-             0.5 * KL(unbiased_cov(y2), unbiased_cov(y1))
+    message("BGGM: Finished")
 
-      obs_jsd[[i]] <- obs
+    for (i in 1:nrow(info$pairwise)) {
 
-      nms[[i]] <- paste("Y_g", info$pairwise[i,], sep = "", collapse = " vs ")
+        y1 <- info$dat[info$pairwise[i, 1]][[1]]
+
+        y2 <- info$dat[info$pairwise[i, 2]][[1]]
+
+        obs <- lapply(1:p, function(x) node_jsd_help(x, y1, y2))
+
+        nms[[i]] <-
+          paste("Yg",
+                info$pairwise[i, ],
+                sep = "",
+                collapse = " vs ")
+
+        obs_jsd[[i]] <- obs
 
       }
 
-    results_ppc <- do.call(cbind.data.frame, predictive_risk)
+      pvalue <- list()
 
-    pvalues <- unlist(lapply(1:nrow(info$pairwise), function(x)  mean(na.omit(results_ppc[,x])  > obs_jsd[[x]])))
+      for (i in 1:nrow(info$pairwise)) {
 
-    returned_object <- list(pvalue = pvalues,
-                            obs_jsd = obs_jsd,
-                            predictive_risk = predictive_risk,
-                            info = info,
-                            names = nms,
-                            iter = iter,
-                            type = type,
-                            call = match.call())
+        obs_i <- obs_jsd[[i]]
+
+        ppc_i <- predictive_jsd[[i]]
+
+        pvalues <-
+          sapply(1:info$dat_info$p[1], function(x)
+            mean(ppc_i[, x]  >  obs_i[x]))
+
+        pvalue[[i]] <-  pvalues
+
+      }
+
+      returned_object <-  list(
+        ppp_jsd = pvalue,
+        obs_jsd = obs_jsd,
+        predictive_jsd = predictive_jsd,
+        info = info,
+        names = nms,
+        iter = iter,
+        test = test,
+        call = match.call(),
+        custom = custom
+      )
+
+  }
+
+      } else {
+
+        custom <- TRUE
+
+        if(groups > 2){
+
+          stop("only two groups allowed for custom functions")
+        }
+
+        # check for mice
+        if(!requireNamespace("mvnfast", quietly = TRUE)) {
+
+          stop("Please install the '", "mvnfast", "' package.")
+
+        }
+
+        if(is.null(custom_obs)){
+
+          stop("observed test-statistic is required when using a customing function.")
+
+        }
+
+        # group one
+        n1 <- info$dat_info$n[1]
+
+        # group two
+        n2 <- info$dat_info$n[2]
+
+        # progress bar
+        if(isTRUE(progress)){
+          pb <- utils::txtProgressBar(min = 0, max = iter, style = 3)
+        }
+        # predictive check
+        pp_check <- sapply(1:iter, function(x){
+
+          # correlation matrix
+          cors <- cov2cor(solve(post[,,x]))
+
+          # Yrep1
+          Yrep1 <- mvnfast::rmvn(n1, rep(0, p), cors)
+
+          # Yrep2
+          Yrep2 <-  mvnfast::rmvn(n2, rep(0, p), cors)
+
+          # custom ppc
+          ppc <- FUN(Yrep1, Yrep2)
+
+          # update progress bar
+          if(isTRUE(progress)){
+            utils::setTxtProgressBar(pb, x)
+            }
+
+          ppc
+
+          })
+
+
+     if(isTRUE(loss)){
+
+       ppp <- mean(pp_check > custom_obs)
+
+     } else {
+
+       ppp <- mean(pp_check < custom_obs)
+     }
+
+      nms <-  paste("Yg",
+              info$pairwise[1, ],
+              sep = "",
+              collapse = " vs ")
+
+
+        returned_object <-  list(
+          ppp_custom = ppp,
+          predictive_custom = pp_check,
+          info = info,
+          names = nms,
+          iter = iter,
+          test = test,
+          call = match.call(),
+          custom = custom,
+          custom_obs = custom_obs
+        )
+
+
     }
 
-
- if(type == "nodewise"){
-
-   info <- Y_combine(...)
-
-   groups <- length(info$dat)
-
-   if(groups < 2){
-     stop("must have two groups")
-   }
-
-
-   Y_G <- rbind(info$dat)
-
-   n_total <- sum(info$dat_info$n)
-
-   Y_G <- scale(do.call(rbind, info$dat), scale = T)
-
-   # inverse scatter matrix
-   S_G <- solve(t(Y_G) %*% Y_G)
-
-   # M_0 posterior (group equality)
-   post <- rWishart(iter, n_total - 1, S_G)
-
-   p <- info$dat_info$p[1]
-
-   predictive_risk <- list()
-
-   obs_jsd <- list()
-
-   cl <- parallel::makeCluster(cores)
-
-   doParallel::registerDoParallel(cl)
-
-   nms <- list()
-
-    for(i in 1:nrow(info$pairwise)){
-
-     n1 <- info$dat_info$n[info$pairwise[i,1]]
-
-     n2 <- info$dat_info$n[info$pairwise[i,2]]
-
-     ppc <- parallel::parLapply(cl=cl, X = 1:iter,  function(x)
-                                Mo_risk_help_node(x, post, n1, n2, p))
-
-     predictive_risk[[i]] <- ppc
-   }
-
-
-   for(i in 1:nrow(info$pairwise)){
-
-     y1 <- info$dat[info$pairwise[i,1]][[1]]
-
-     y2 <- info$dat[info$pairwise[i,2]][[1]]
-
-     obs <- lapply(1:info$dat_info$p[1], function(x) node_jsd_help(x, y1, y2))
-
-     nms[[i]] <- paste("Y_g", info$pairwise[i,], sep = "", collapse = " vs ")
-
-     obs_jsd[[i]] <- obs
-
-   }
-   parallel::stopCluster(cl)
-   pvalue <- list()
-
-   for(i in 1:nrow(info$pairwise)){
-
-     ppc_i <- do.call(rbind, predictive_risk[[i]])
-
-     obs_i <- obs_jsd[[i]]
-
-     pvalues <- lapply(1:info$dat_info$p[1], function(x)  mean(ppc_i[,x]  > obs_i[x]))
-
-     pvalue[[i]] <-  pvalues
-
-   }
- # parallel::stopCluster(cl)
- returned_object <-  list(pvalue = pvalue,
-                          obs_jsd = obs_jsd,
-                          predictive_risk = predictive_risk,
-                          info = info,
-                          names = nms,
-                          iter = iter,
-                          type = type,
-                          call = match.call())
-}
-
-class(returned_object) <- "ggm_compare_ppc"
-returned_object
+    class(returned_object) <-  c("BGGM",
+                                 "estimate",
+                                 "ggm_compare_ppc")
+    return(returned_object)
 
 }
 
-#' @name print.ggm_compare_ppc
-#' @title  Print method for \code{ggm_compare_ppc.default} objects
-#'
-#' @param x An object of class \code{ggm_compare_ppc}
-#' @param ... currently ignored
-#' @export
-print.ggm_compare_ppc <- function(x,...){
+
+
+print_ggm_compare_ppc <- function(x, ...){
+
+
   cat("BGGM: Bayesian Gaussian Graphical Models \n")
   cat("--- \n")
-  if(x$type == "nodewise"){
-    cat("Type: GGM Compare (Nodewise Predictive Check) \n")
+  if(x$test == "nodewise"){
+    cat("Test: Nodewise Predictive Check \n")
   } else{
-    cat("Type: GGM Compare (Global Predictive Check) \n")
+    cat("Test: Global Predictive Check \n")
   }
   p <- x$info$dat_info$p[1]
   cat("Posterior Samples:", x$iter, "\n")
-
   groups <- length(x$info$dat)
   for (i in 1:groups) {
     cat("  Group",
@@ -248,294 +567,348 @@ print.ggm_compare_ppc <- function(x,...){
         x$info$dat_info$n[[i]],
         "\n")
   }
-  # cat("Observations (total):", sum(x$info$dat_info$n), "\n")
-  cat("Variables (p):", p, "\n")
-  cat("Edges:", .5 * (p * (p-1)), "\n")
+
+  cat("Nodes: ", p, "\n")
+  cat("Relations:", .5 * (p * (p-1)), "\n")
   cat("--- \n")
   cat("Call: \n")
   print(x$call)
   cat("--- \n")
-  cat("Date:", date(), "\n")
-}
+  if(x$test == "global"){
+    if(isFALSE(x$custom)){
 
+      cat("Symmetric KL divergence (JSD): \n \n")
+      results <- data.frame(
+        contrast = do.call(rbind, x$names),
+        JSD.obs =  round(do.call(rbind, x$obs_jsd), 3),
+        p_value = round(x$ppp_jsd, 3)
+      )
+      print(results, row.names = F)
+      cat("--- \n \n")
+      cat("Sum of Squared Error: \n \n")
+      results <- data.frame(
+        contrast = do.call(rbind, x$names),
+        SSE.obs =  round(do.call(rbind, x$obs_sse), 3),
+        p.value = round(x$ppp_sse, 3)
+      )
+      print(results, row.names = F)
+      cat("--- \n")
+      cat("note:\n")
+      cat("JSD is Jensen-Shannon divergence \n")
 
-#' @name summary.ggm_compare_ppc
-#' @title Summary method for \code{ggm_compare_ppc.default} objects
-#'
-#' @param object An object of class \code{ggm_compare_ppc}
-#' @param ... currently ignored
-#' @seealso \code{\link{ggm_compare_ppc}}
-#' @return A list containing the summarized results
-#' @export
-summary.ggm_compare_ppc <- function(object, ...){
+    } else {
 
-  p <- object$info$dat_info$p[1]
+      cat("Custom: \n \n")
 
-  if (object$type == "global") {
-    results <- data.frame(
-      contrast = do.call(rbind, object$names),
-      KLD =  do.call(rbind, object$obs_jsd),
-      p_value = object$pvalue
-    )
-  }
-  if (object$type == "nodewise") {
+      results <- data.frame(
+        contrast = do.call(rbind, list(x$names)),
+        custom.obs =  round(x$custom_obs, 3) ,
+        p.value =  round(x$ppp_custom, 3)
+      )
+      print(results, row.names = F)
+      cat("--- \n")
+    }
+  } else {
+
+    cat("Symmetric KL divergence (JSD): \n \n")
+
     results <- list()
-    for (i in 1:length(object$obs_jsd)) {
+
+    for (i in 1:length(x$obs_jsd)) {
       results[[i]] <-
         data.frame(
-          node = 1:p ,
-          KLD =  round(do.call(rbind, object$obs_jsd[[i]]), 3),
-          p_value = unlist(object$pvalue[[i]])
+          Node = 1:p ,
+          JSD.obs = round(do.call(rbind, x$obs_jsd[[i]]), 3),
+          p_value = unlist(x$ppp_jsd[[i]])
         )
-      names(results)[[i]] <- object$names[[i]]
+      names(results)[[i]] <- x$names[[i]]
     }
+
+    for(i in 1:length(x$obs_jsd)){
+      cat(do.call(rbind, x$names)[[i]], "\n")
+      print(results[[i]],  row.names = F)
+      cat("--- \n\n")
+    }
+
+    cat("note:\n")
+    cat("JSD is Jensen-Shannon divergence \n")
   }
 
-  returned_object <- list(results = results,
-                          object = object)
-  class(returned_object) <- "summary.ggm_compare_ppc"
-  return(returned_object)
 }
 
 
-#' @name print.summary.ggm_compare_ppc
-#' @title Summary method for \code{summary.ggm_compare_ppc} objects
-#' @param x An object of class \code{summary.ggm_compare_ppc}
-#' @param ... currently ignored
-#' @seealso \code{\link{summary.ggm_compare_ppc}}
-#' @export
-print.summary.ggm_compare_ppc <- function(x, ...){
-  cat("BGGM: Bayesian Gaussian Graphical Models \n")
-  cat("--- \n")
-  if(x$object$type == "nodewise"){
-    cat("Type: GGM Comparison (Nodewise Predictive Check) \n")
-  } else{
-    cat("Type: GGM Comparison (Global Predictive Check) \n")
-  }
-  p <- x$object$info$dat_info$p[1]
-  cat("Posterior Samples:", x$object$iter, "\n")
-
-  groups <- length(x$object$info$dat)
-  for (i in 1:groups) {
-    cat("  Group",
-        paste(i, ":", sep = "") ,
-        x$object$info$dat_info$n[[i]],
-        "\n")
-  }
-  cat("Variables (p):", p, "\n")
-  cat("Edges:", .5 * (p * (p-1)), "\n")
-  cat("--- \n")
-  cat("Call: \n")
-  print(x$object$call)
-  cat("--- \n")
-  cat("Estimates: \n \n")
-  if(x$object$type == "global"){
-    print(x$results, right = T, row.names = F,...)
-    cat("--- \n")
-    cat("note: \np_value = p(T(Y_rep) > T(y)|Y)\nKLD = (symmetric) Kullback-Leibler divergence")
-  }
-  if(x$object$type == "nodewise"){
-    for(i in 1:length(x$object$obs_jsd)){
-      cat(do.call(rbind, x$object$names)[[i]], "\n")
-      print(   x$results[[i]],  row.names = F, ...)
-      cat("\n")
-    }
-
-    cat("--- \n")
-    cat("note: \np_value = p(T(Y_rep) > T(y)|Y)\nKLD = (symmetric) Kullback-Leibler divergence")
-  }
-}
-
-#' Plot \code{ggm_compare_ppc} Objects
+#' @title Plot \code{ggm_compare_ppc} Objects
 #'
-#' @description Plot \href{https://CRAN.R-project.org/package=ggridges/vignettes/introduction.html}{ggridges} for
-#' the GGM comparison with posterior predictive KL-divergence. The plots contain the predictive distribution, assuming group equality, as well as
-#' the observed KL-divergence. Further, the predictive distributions are conveniently colored to infer whether the null of group equality
-#' should be rejected. This is accomplished by having the critical region, corresponding to a desired 'significance' level, shaded in red.
-#' Thus, if the observed value is in the red region, this suggests the null hypothesis of group equality should be rejected.
+#' @description Plot the predictive check with \code{\link[ggridges]{ggridges}}
 #'
-#' @param x object of class \code{ggm_compare_ppc}
-#' @param critical 'significance' level
-#' @param col_noncritical fill color of the non critical region
-#' @param col_critical  fill color of the critical region (e.g., \code{critical = 0.05})
-#' @param point_size point size for the observed KL-divergence
-#' @param log log transformation. useful for small values and skewed predictive distributions
-#' @param ... currently ignored
-#' @references
-#' Williams, D. R., Rast, P., Pericchi, L. R., & Mulder, J. (2019). Comparing Gaussian Graphical
-#' Models with the Posterior Predictive Distribution and Bayesian Model Selection. \href{https://psyarxiv.com/yt386}{pre print}
+#' @param x An object of class \code{ggm_compare_ppc}
 #'
-#' @return one object of class \code{ggplot} when \code{type = "global"}. One object for each pairwise contrast when \code{type = "nodewise"}
+#' @param critical Numeric. The 'significance' level
+#'                 (defaults to \code{0.05}).
 #'
-#' @note This method is Bayesian, as it relies on the posterior predictive distribution. That said, there are clear parallels to frequentist testing-e.g.,
-#' assuming group equality and critical regions. Most importantly, this method CANNOT provide evidence for the null hypothesis. Thus it can only reject
-#' the underlying assumption of group equality..
+#' @param col_noncritical Character string. Fill color for the non-critical region
+#'                        (defaults to \code{"#84e184A0"}).
 #'
-
+#' @param col_critical  Character string. Fill color for the critical region
+#'                     (defaults to \code{"red"}).
+#'
+#' @param point_size Numeric. The point size for the observed score
+#'                   (defaults to \code{2}).
+#'
+#' @param ... Currently ignored.
+#'
+#' @return An object (or list of objects) of class \code{ggplot}.
 #'
 #' @importFrom ggridges stat_density_ridges
 #'
+#' @note
+#' See
+#' \href{https://CRAN.R-project.org/package=ggridges/vignettes/introduction.html}{ggridges} for
+#' many examples.
+#'
+#' @seealso \code{\link{ggm_compare_ppc}}
+#'
 #' @examples
-#' # assume group equality
-#' Y1 <- MASS::mvrnorm(500, rep(0, 16), Sigma = diag(16))
-#' Y2 <- MASS::mvrnorm(500, rep(0, 16), Sigma = diag(16))
-#' Y3 <- MASS::mvrnorm(500, rep(0, 16), Sigma = diag(16))
+#' \donttest{
+#' # data
+#' Y <- bfi
 #'
-#'# global
-#' ggm_ppc  <- ggm_compare_ppc(Y1, Y2, Y3, type = "global", iter = 50)
+#' #############################
+#' ######### global ############
+#' #############################
+#' # males
+#' Ym <- subset(Y, gender == 1,
+#'              select = - c(gender, education))
 #'
-#' # plot
-#' plot(ggm_ppc)
+#' # females
 #'
-#'\donttest{
-#'# nodewise
-#'ggm_ppc  <- ggm_compare_ppc(Y1, Y2, Y3, type = "nodewise", iter = 50)
+#' Yf <- subset(Y, gender == 2,
+#'              select = - c(gender, education))
 #'
-#' plot(ggm_ppc, log = TRUE)
+#'
+#' global_test <- ggm_compare_ppc(Ym, Yf,
+#'                                iter = 250,
+#'                                progress = FALSE)
+#'
+#' plot(global_test)
 #' }
 #' @export
 plot.ggm_compare_ppc <- function(x,
                                  critical = 0.05,
                                  col_noncritical = "#84e184A0",
                                  col_critical = "red",
-                                 point_size = 2,
-                                 log = FALSE,...){
+                                 point_size = 2, ...){
 
-  # change object name
-  fit <- x
+  if(x$test == "global"){
 
+    if(isFALSE( x$custom)) {
 
+      # number of contrasts
+      k <- length(x$ppp_jsd)
 
-  if(fit$type == "global"){
+      jsd <- unlist(x$predictive_jsd)
 
-    # number of contrasts
-    k <- length(fit$pvalue)
+      sse <- unlist(x$predictive_sse)
 
-    ppc <- unlist(fit$predictive_risk)
+      dat_jsd <- data.frame(ppc = jsd,
+                            contrast = rep(gsub(
+                              x = x$names,
+                              pattern =  "_",
+                              replacement = ""
+                            ),
+                            each = x$iter))
 
-    dat_ppc <- data.frame(ppc = ppc,
-                          contrast = rep( gsub(x = fit$names,pattern =  "_", replacement = ""),
-                                          each = fit$iter) )
+      dat_obs_jsd <- data.frame(
+        contrast =  gsub(
+          x = x$names,
+          pattern =  "_",
+          replacement = ""
+        ),
+        ppc = unlist(x$obs_jsd)
+      )
 
-    dat_obs <- data.frame(contrast =  gsub(x = fit$names,pattern =  "_",
-                                           replacement = ""),
-                          ppc = unlist(fit$obs_jsd))
+      dat_sse <- data.frame(ppc = sse,
+                            contrast = rep(gsub(
+                              x = x$names,
+                              pattern =  "_",
+                              replacement = ""
+                            ),
+                            each = x$iter))
 
-    if(isFALSE(log)){
+      dat_obs_sse <- data.frame(
+        contrast =  gsub(
+          x = x$names,
+          pattern =  "_",
+          replacement = ""
+        ),
+        ppc = unlist(x$obs_sse)
+      )
 
-      plt <- ggplot(dat_ppc, aes(x = ppc,
-                                 y = contrast,
-                                 fill = factor(..quantile..))) +
-
-        stat_density_ridges(geom = "density_ridges_gradient",
-                            calc_ecdf = TRUE, alpha = 0.5,
-                            quantiles = c(0.025, 1 - (critical))) +
-        scale_fill_manual( values = c(col_noncritical, col_noncritical, col_critical)) +
+      plot_jsd <- ggplot(dat_jsd, aes(
+        x = ppc,
+        y = contrast,
+        fill = factor(..quantile..)
+      )) +
+        stat_density_ridges(
+          geom = "density_ridges_gradient",
+          calc_ecdf = TRUE,
+          alpha = 0.5,
+          quantiles = c(0.025, 1 - (critical))
+        ) +
+        scale_fill_manual(values = c(col_noncritical,
+                                     col_noncritical,
+                                     col_critical)) +
         theme(legend.position = "none") +
         xlab("Predictive Check") +
         ylab("Contrast") +
-        geom_point(inherit.aes = F,
-                   data = dat_obs,
-                   aes(x = ppc,
-                       y = contrast),
-                   size = point_size) +
-        scale_y_discrete(limits = rev(levels(dat_obs$contrast)))
+        geom_point(
+          inherit.aes = F,
+          data = dat_obs_jsd,
+          aes(x = ppc,
+              y = contrast),
+          size = point_size
+        ) +
+        scale_y_discrete(limits = rev(levels(dat_obs_jsd$contrast))) +
+        ggtitle("Symmetric KL-Divergence")
 
-    }
+      plot_sse <- ggplot(dat_sse, aes(
+        x = ppc,
+        y = contrast,
+        fill = factor(..quantile..)
+      )) +
+        stat_density_ridges(
+          geom = "density_ridges_gradient",
+          calc_ecdf = TRUE,
+          alpha = 0.5,
+          quantiles = c(0.025, 1 - (critical))
+        ) +
+        scale_fill_manual(values = c(col_noncritical,
+                                     col_noncritical,
+                                     col_critical)) +
+        theme(legend.position = "none") +
+        xlab("Predictive Check") +
+        ylab("Contrast") +
+        geom_point(
+          inherit.aes = F,
+          data = dat_obs_sse,
+          aes(x = ppc,
+              y = contrast),
+          size = point_size
+        ) +
+        scale_y_discrete(limits = rev(levels(dat_obs_sse$contrast))) +
+        ggtitle("Sum of Squared Error")
 
-    if(isTRUE(log)){
+      list(plot_sse = plot_sse, plot_jsd = plot_jsd)
 
-      plt <- ggplot(dat_ppc, aes(x = log(ppc),
-                                 y = contrast,
-                                 fill = factor(..quantile..))) +
+    } else {
+
+      k <- length(x$ppp_custom)
+
+      custom <- unlist(x$predictive_custom)
+
+      dat_custom <- data.frame(ppc = custom,
+                               contrast = rep(gsub(
+                                 x = x$names,
+                                 pattern =  "_",
+                                 replacement = ""
+                               ),
+                               each = x$iter))
+
+      dat_obs_custom <- data.frame(
+        contrast = gsub(
+          x = x$names,
+          pattern =  "_",
+          replacement = ""
+        ),
+        ppc = unlist(x$custom_obs)
+      )
+
+      plot_custom <- ggplot(dat_custom, aes(
+        x = ppc,
+        y = contrast,
+        fill = factor(..quantile..)
+      )) +
+        stat_density_ridges(
+          geom = "density_ridges_gradient",
+          calc_ecdf = TRUE,
+          alpha = 0.5,
+          quantiles = c(0.025, 1 - (critical))
+        ) +
+        scale_fill_manual(values = c(col_noncritical,
+                                     col_noncritical,
+                                     col_critical)) +
+        theme(legend.position = "none") +
+        xlab("Predictive Check") +
+        ylab("Contrast") +
+        geom_point(
+          inherit.aes = F,
+          data = dat_obs_custom,
+          aes(x = ppc,
+              y = contrast),
+          size = point_size
+        ) +
+        scale_y_discrete(limits = rev(levels(dat_obs_custom$contrast))) +
+        ggtitle("Custom")
+
+      list(plot_custom = plot_custom)
+
+    }  # end of global
+
+  } else {
+
+    plt <- list()
+
+    k <- length(x$names)
+
+    for(i in 1:k){
+
+      dat_obs <- data.frame(ppc = unlist(x$obs_jsd[[i]]),
+                            node = 1:x$info$dat_info$p[1])
+
+
+      test <- reshape::melt(x$predictive_jsd[[i]])
+
+      test$node <- factor(test$X2,
+                          levels = rev(1:x$info$dat_info$p[1]),
+                          labels = rev(1:x$info$dat_info$p[1]))
+
+      dat_obs$node <- factor(dat_obs$node,
+                             levels = rev(1:x$info$dat_info$p[1]),
+                             labels = rev(1:x$info$dat_info$p[1]))
+
+      suppressWarnings(
+        test$value <- log(test$value)
+      )
+      check_inf <- which(is.infinite(test$value))
+
+      test$value[check_inf] <- NA
+
+      test <- na.omit(test)
+
+      plt[[i]] <- ggplot(test, aes(x = value,
+                                   y = node,
+                                   fill = factor(..quantile..))) +
         stat_density_ridges(geom = "density_ridges_gradient",
+                            rel_min_height = 0.01,
                             calc_ecdf = TRUE,
-                            quantiles = c(0.025, 1 - (critical ))) +
-        scale_fill_manual( values = c(col_noncritical, col_noncritical, col_critical)) +
+                            quantiles = c(0.025, 1 - (critical))) +
+        scale_fill_manual( values = c(col_noncritical,
+                                      col_noncritical,
+                                      col_critical)) +
+        geom_point(data = dat_obs,
+                   inherit.aes = F,
+                   aes(x = log(ppc),
+                       y = node),
+                   size = point_size) +
         theme(legend.position = "none") +
         xlab("Predictive Check") +
-        ylab("Contrast") +
-        geom_point(inherit.aes = F,
-                   data = dat_obs,
-                   aes(x = log(ppc),
-                       y = contrast),
-                   size = point_size) +
-        scale_y_discrete(limits = rev(levels(dat_obs$contrast)))
-
+        ylab("Node") +
+        ggtitle(gsub(x = x$names[[i]],
+                     pattern =  "_",
+                     replacement = ""),
+                subtitle = "Symmteric KL-Divergence (log scale)")
     }
 
+    plt
   }
-  if(fit$type == "nodewise" ){
-
-
-    if(isTRUE(log)){
-      plt <- list()
-      k <- length(fit$names)
-
-      for(i in 1:k){
-        dat_obs <- data.frame(ppc = unlist(fit$obs_jsd[[i]]),
-                              node = 1:fit$info$dat_info$p[1])
-
-
-        test <- reshape::melt( do.call(rbind, fit$predictive_risk[[i]]))
-
-        test$node <- factor(test$X2, levels = rev(1:fit$info$dat_info$p[1]), labels = rev(1:fit$info$dat_info$p[1]))
-        dat_obs$node <- factor(dat_obs$node, levels = rev(1:fit$info$dat_info$p[1]), labels = rev(1:fit$info$dat_info$p[1]))
-
-        plt[[i]] <- ggplot(test, aes(x = log(value),
-                                     y = node,
-                                     fill = factor(..quantile..))) +
-          stat_density_ridges(geom = "density_ridges_gradient",rel_min_height = 0.01,
-                              calc_ecdf = TRUE,
-                              quantiles = c(0.025, 1 - (critical))) +
-          scale_fill_manual( values = c(col_noncritical, col_noncritical, col_critical)) +
-
-          geom_point(data = dat_obs, inherit.aes = F,  aes(x = log(ppc), y = node), size = point_size) +
-          theme(legend.position = "none") +
-          xlab("Predictive Check") +
-          ylab("Node") +
-          ggtitle( gsub(x =fit$names[[i]],pattern =  "_",
-                        replacement = ""))
-      }
-    }
-    if(isFALSE(log)){
-
-      plt <- list()
-      k <- length(fit$names)
-
-      for(i in 1:k){
-        dat_obs <- data.frame(ppc = unlist(fit$obs_jsd[[i]]),
-                              node = 1:fit$info$dat_info$p[1])
-
-
-        test <- reshape::melt( do.call(rbind, fit$predictive_risk[[i]]))
-
-        test$node <- factor(test$X2,
-                            levels = rev(1:fit$info$dat_info$p[1]),
-                            labels = rev(1:fit$info$dat_info$p[1]))
-
-        dat_obs$node <- factor(dat_obs$node, levels = rev(1:fit$info$dat_info$p[1]),
-                               labels = rev(1:fit$info$dat_info$p[1]))
-
-        plt[[i]] <- ggplot(test, aes(x = value,
-                                     y = node,
-                                     fill = factor(..quantile..))) +
-          stat_density_ridges(geom = "density_ridges_gradient",
-                              calc_ecdf = TRUE,
-                              quantiles = c(0.025, 1 - (critical))) +
-          scale_fill_manual( values = c(col_noncritical, col_noncritical, col_critical)) +
-          geom_point(data = dat_obs, inherit.aes = F,  aes(x = ppc, y = node)) +
-          # scale_y_discrete(limits = rev(levels(as.factor(dat_obs$node)))) +
-          theme(legend.position = "none") +
-          xlab("Predictive Check") +
-          ylab("Node") +
-          ggtitle( gsub(x =fit$names[[i]],pattern =  "_",
-                        replacement = ""))
-      }
-
-
-    }
-  }
-  plt
 }
-

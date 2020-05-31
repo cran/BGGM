@@ -2,35 +2,53 @@
 % Please edit documentation in R/ggm_compare_estimate.default.R
 \name{summary.ggm_compare_estimate}
 \alias{summary.ggm_compare_estimate}
-\title{Summary method for \code{ggm_compare_estimate.default} objects}
+\title{Summary method for \code{ggm_compare_estimate} objects}
 \usage{
-\method{summary}{ggm_compare_estimate}(object, cred = 0.95, ...)
+\method{summary}{ggm_compare_estimate}(object, col_names = TRUE, cred = 0.95, ...)
 }
 \arguments{
-\item{object}{An object of class \code{ggm_compare_estimate}}
+\item{object}{An object of class \code{ggm_compare_estimate}.}
 
-\item{cred}{credible interval width}
+\item{col_names}{Logical. Should the summary include the column names (default is \code{TRUE})?
+Setting to \code{FALSE} includes the column numbers (e.g., \code{1--2}).}
 
-\item{...}{currently ignored}
+\item{cred}{Numeric. The credible interval width for summarizing the posterior
+distributions (defaults to 0.95; must be between 0 and 1).}
+
+\item{...}{Currently ignored.}
 }
 \value{
-A list containing the summarized posterior distributions
+A list containing the summarized posterior distributions.
 }
 \description{
-Summary method for \code{ggm_compare_estimate.default} objects
+Summarize the posterior distribution of each partial correlation
+difference with the posterior mean and standard deviation.
 }
 \examples{
+\donttest{
+# note: iter = 250 for demonstrative purposes
 # data
-Y1 <- BGGM::bfi[1:500,1:5]
-Y2 <- BGGM::bfi[501:1000, 1:5]
+Y <- bfi
+
+# males and females
+Ymale <- subset(Y, gender == 1,
+                select = -c(gender,
+                            education))[,1:5]
+
+Yfemale <- subset(Y, gender == 2,
+                  select = -c(gender,
+                              education))[,1:5]
 
 # fit model
-fit <- ggm_compare_estimate(Y1, Y2)
+fit <- ggm_compare_estimate(Ymale,  Yfemale,
+                            type = "ordinal",
+                            iter = 250,
+                            prior_sd = 0.25,
+                            progress = FALSE)
 
-# posterior summary of differences
 summary(fit)
-
+}
 }
 \seealso{
-\code{\link{ggm_compare_estimate.default}}
+\code{\link{ggm_compare_estimate}}
 }

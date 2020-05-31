@@ -2,109 +2,111 @@
 % Please edit documentation in R/select.explore.R
 \name{select.explore}
 \alias{select.explore}
-\title{Select Graphical Structure with the Bayes Factor}
+\title{Graph selection for \code{explore} Objects}
 \usage{
 \method{select}{explore}(object, BF_cut = 3, alternative = "two.sided", ...)
 }
 \arguments{
-\item{object}{object of class \code{explore.default}}
+\item{object}{An object of class \code{explore.default}}
 
-\item{BF_cut}{evidentiary threshold}
+\item{BF_cut}{Numeric. Threshold for including an edge (defaults to 3).}
 
-\item{alternative}{type of hypothesis (see notes)}
+\item{alternative}{A character string specifying the alternative hypothesis. It
+must be one of "two.sided" (default), "greater", "less",
+or "exhuastive". See note for futher details.}
 
-\item{...}{currently not used}
+\item{...}{Currently ignored.}
 }
 \value{
-list of class \code{select.explore}:
+The returned object of class \code{select.explore} contains a lot of information that
+        is used for printing and plotting the results. For users of \strong{BGGM}, the following
+        are the useful objects:
 
-\code{alternative = "two.sided"}:
-\itemize{
- \item \code{partials_non_zero} selected partial correlation matrix
- \item \code{pcor_mat} partial correlation matrix (non set to zero)
- \item \code{pcor_sd} partial correlation standard deviations
- \item \code{Adj_10} adjacency matrix for the selected edges (in favor of the \code{alternative})
- \item \code{Adj_01} adjacency matrix for the null hypothesis  (conditional independence)
- \item \code{BF_10} Bayes factors for \code{alternative}
- \item \code{BF_01} Bayes factors for the null hypothesis
- \item \code{BF_cut} evidentiary threshold
- \item \code{alternative} \code{"two.sided"}
- \item \code{code} \code{match.call()}
-}
 
-\code{alternative = "greater"}:
-\itemize{
- \item \code{partials_positive} selected partial correlation matrix
- \item \code{pcor_mat} partial correlation matrix (none set to zero)
- \item \code{pcor_sd} partial correlation standard deviations
- \item \code{Adj_20} adjacency matrix for the selected edges (in favor of the \code{alternative})
- \item \code{Adj_01} adjacency matrix for the null hypothesis  (conditional independence)
- \item \code{BF_20} Bayes factors for \code{alternative}
- \item \code{BF_01} Bayes factors for the null hypothesis
- \item \code{BF_cut} evidentiary threshold
- \item \code{alternative} \code{"greater"}
- \item \code{code} \code{match.call()}
-}
+\code{alternative = "two.sided"}
 
-\code{alternative = "less"}:
-\itemize{
- \item \code{partials_negative} selected partial correlation matrix
- \item \code{pcor_mat} partial correlation matrix (none set to zero)
- \item \code{pcor_sd} partial correlation standard deviations
- \item \code{Adj_20} adjacency matrix for the selected edges (in favor of the \code{alternative})
- \item \code{Adj_01} adjacency matrix for the null hypothesis  (conditional independence)
- \item \code{BF_20} Bayes factors for \code{alternative}
- \item \code{BF_01} Bayes factors for the null hypothesis
- \item \code{BF_cut} evidentiary threshold
- \item \code{alternative} \code{"less"}
- \item \code{code} \code{match.call()}
-}
+ \itemize{
+
+ \item \code{pcor_mat_zero} Selected partial correlation matrix (weighted adjacency).
+
+ \item \code{pcor_mat} Partial correlation matrix (posterior mean).
+
+ \item \code{Adj_10} Adjacency matrix for the selected edges.
+
+ \item \code{Adj_01} Adjacency matrix for which there was
+                     evidence for the null hypothesis.
+ }
+
+\code{alternative = "greater"} and \code{"less"}
+
+ \itemize{
+
+ \item \code{pcor_mat_zero} Selected partial correlation matrix (weighted adjacency).
+
+ \item \code{pcor_mat} Partial correlation matrix (posterior mean).
+
+ \item \code{Adj_20} Adjacency matrix for the selected edges.
+
+ \item \code{Adj_02} Adjacency matrix for which there was
+                     evidence for the null hypothesis (see note).
+ }
 
 \code{alternative = "exhaustive"}
+
 \itemize{
-\item \code{post_prob} data.frame with posterior probabilities for each edge
-\item \code{neg_mat} adjacency matrix for negative edges
-\item \code{post_mat} adjacency matrix for positive edges
-\item \code{null_mat} adjacency matrix for zero  (conditional independence)
-\item \code{"alternative"} "exhaustive"
-\item \code{pcor_mat} partial correlation matrix (non set to zero)
-\item \code{pcor_sd} partial correlation standard deviations
-\item \code{code} \code{match.call()}
-\item \code{prob} \code{hyp_prob}
+
+\item \code{post_prob} A data frame that included the posterior hypothesis probabilities.
+
+\item \code{neg_mat} Adjacency matrix for which there was evidence for negative edges.
+
+\item \code{pos_mat} Adjacency matrix for which there was evidence for positive edges.
+
+\item \code{neg_mat} Adjacency matrix for which there was
+                     evidence for the null hypothesis (see note).
+
+ \item \code{pcor_mat} Partial correlation matrix (posterior mean). The weighted adjacency
+ matrices can be computed by multiplying \code{pcor_mat} with an adjacency matrix.
+
 }
 }
 \description{
-This allows for not only estimating the conditional dependence structure, that is non-zero edges, but also the conditional \strong{in}dependence
-structure (evidence for no relation).
+Provides the selected graph based on the Bayes factor
+\insertCite{Williams2019_bf}{BGGM}.
+}
+\details{
+Exhaustive provides the posterior hypothesis probabilities for
+a positive, negative, or null relation \insertCite{@see Table 3 in @Williams2019_bf}{BGGM}.
 }
 \note{
-The \code{alternative} can be either \code{greater}, \code{less}, \code{two.sided}, or \code{exhaustive}. The argument \code{hyp_prob} is used only
-when \code{alternative = hypothesis}. \code{greater} and \code{less} test directional hypotheses, and thus, the graphical structure will
-only included edges in that direction (i.e., positive or negative). \code{two.sided} is the customary approach, and test for the presence or
-absence of an edge. \code{exhaustive} tests negative vs. positive  vs. zero. Here \code{hyp_prob} is the posterior probability threshold for the respective
-hypotheses.
+Care must be taken with the options \code{alternative = "less"} and
+      \code{alternative = "greater"}. This is because the full parameter space is not included,
+      such, for  \code{alternative = "greater"}, there can be evidence for the "null" when
+      the relation is negative. This inference is correct: the null model better predicted
+      the data than the positive model. But note this is relative and does \strong{not}
+      provide absolute evidence for the null hypothesis.
 }
 \examples{
+
 \donttest{
-# p = 10
-Y <- BGGM::bfi[,1:10]
+#################
+### example 1 ###
+#################
 
-# sample posterior
-fit <- explore(Y, iter = 5000)
+#  data
+Y <- bfi[,1:10]
 
-# select E
-E <- select(fit, BF_cut = 3)
+# fit model
+fit <- explore(Y, progress = FALSE)
 
-# summarize
-summary(E)
+# edge set
+E <- select(fit,
+            alternative = "exhaustive")
 
-# non-zero edges
-E$partials_non_zero
-
-# adjacency matrix
-E$Adj_10
-
-# null adjacency matrix
-E$Adj_01
 }
+}
+\references{
+\insertAllCited{}
+}
+\seealso{
+\code{\link{explore}} and \code{\link{ggm_compare_explore}} for several examples.
 }

@@ -2,52 +2,60 @@
 % Please edit documentation in R/coef.estimate.R
 \name{coef.estimate}
 \alias{coef.estimate}
-\title{Precision Matrix to Multiple Regression}
+\title{Compute Regression Parameters for \code{estimate} Objects}
 \usage{
-\method{coef}{estimate}(object, node = 1, cred = 0.95, iter = 500, ...)
+\method{coef}{estimate}(object, iter = NULL, progress = TRUE, ...)
 }
 \arguments{
-\item{object}{object of class \code{estimate} (analytic = F)}
+\item{object}{An Object of class \code{estimate}}
 
-\item{node}{which node to summarize (i.e., the outcome)}
+\item{iter}{Number of iterations (posterior samples; defaults to the number in the object).}
 
-\item{cred}{credible interval used in the summary output}
+\item{progress}{Logical. Should a progress bar be included (defaults to \code{TRUE}) ?}
 
-\item{iter}{number of samples used in the conversion.}
-
-\item{...}{e.g., \code{digits}}
+\item{...}{Currently ignored.}
 }
 \value{
-list of class \code{coef.estimate}:
+An object of class \code{coef}, containting two lists.
 
-list \code{inv_2_beta}:
+
 \itemize{
- \item \code{betas} posterior samples for the regression coefficients
- \item \code{sigma} posterior samples for sigma (residual sd)
- \item \code{call} \code{match.call()}
+
+\item \code{betas} A list of length \emph{p}, each containing a \emph{p} - 1 by \code{iter} matrix of
+posterior samples
+
+\item \code{object} An object of class \code{estimate} (the fitted model).
 }
-
-data frame \code{summary_inv_2_beta}:
-\itemize{
-\item summary of regression coefficients
-}
-
-
-\code{call} \code{match.call()}
 }
 \description{
-There is a direct correspondence between the covariance matrix and multiple regression. In the case of GGMs, it is possible
-to estimate the edge set with multiple regression (i.e., neighborhood selection). In *BGGM*, the precision matrix is first sampled from, and then
-each draws is converted to the corresponding coefficients and error variances. This results in a posterior distribution. This function can be used
-to perform Bayesian multiple regression.
+There is a direct correspondence between the inverse covariance matrix and
+ multiple regression \insertCite{kwan2014regression,Stephens1998}{BGGM}. This readily allows
+ for converting the GGM paramters to regression coefficients. All data types are supported.
 }
 \examples{
-# p = 10
-Y <- BGGM::bfi[,1:10]
+\donttest{
+# note: iter = 250 for demonstrative purposes
 
-# sample posterior
-fit <- estimate(Y, iter = 5000)
+#########################
+### example 1: binary ###
+#########################
+# data
+Y <- women_math[1:500, ]
 
-# precision to regression
-coefficients(fit, node = 1, cred = 0.95)
+# fit model
+fit <- estimate(Y, type = "binary",
+                iter = 250,
+                progress = FALSE)
+
+# summarize the partial correlations
+reg <- coef(fit, progress = FALSE)
+
+# summary
+summ <- summary(reg)
+
+summ
+}
+}
+\references{
+\insertAllCited{}
 }

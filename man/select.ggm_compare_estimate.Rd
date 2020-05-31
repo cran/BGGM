@@ -2,62 +2,65 @@
 % Please edit documentation in R/select.ggm_compare_estimate.R
 \name{select.ggm_compare_estimate}
 \alias{select.ggm_compare_estimate}
-\title{Edge Differences and (Practical) Equivalence Between GGMs}
+\title{Graph Selection for \code{ggm_compare_estimate} Objects}
 \usage{
-\method{select}{ggm_compare_estimate}(object, cred = 0.95, rope = NULL, prob = 0.95, ...)
+\method{select}{ggm_compare_estimate}(object, cred = 0.95, ...)
 }
 \arguments{
-\item{object}{object of class \code{ggm_compare_estimate}}
+\item{object}{An object of class \code{estimate.default}.}
 
-\item{cred}{credible interval width used for the decision rule}
-
-\item{rope}{region of practical equivalence}
-
-\item{prob}{posterior probability (see notes)}
+\item{cred}{Numeric. The credible interval width for selecting the graph
+(defaults to 0.95; must be between 0 and 1).}
 
 \item{...}{not currently used}
 }
 \value{
-A list of class \code{select.ggm_compare_estimate}:
-\code{rope} = NULL:
+The returned object of class \code{select.ggm_compare_estimate} contains a lot of information that
+        is used for printing and plotting the results. For users of \strong{BGGM}, the following
+        are the useful objects:
+
+
 \itemize{
-\item \code{mat_adj} adjacency matrix (one for each contrast)
-\item \code{mat_pcor} selected partial correlations (one for each contrast)
-\item \code{call} \code{match.call()}
-\item \code{object} object of class \code{ggm_compare_estimate}
-\item \code{rope} region of practical equivalence
-\item \code{cred} credible interval
-\item \code{prob} posterior probability
+
+\item \code{mean_diff} A list of matrices for each group comparsion (partial correlation differences).
+
+\item \code{pcor_adj} A list of weighted adjacency matrices for each group comparsion.
+
+\item \code{adj} A list of adjacency matrices for each group comparsion.
+
 }
 }
 \description{
-Edge Differences and (Practical) Equivalence Between GGMs
-}
-\note{
-\code{prob} (posterior probability) is the decision rule for the rope. For example, with \code{rope = 0.1}
-and \code{prob = 0.95}, differences require that 95 \% of the posterior exlcudes +- 0.1,
-whereas equivalence requires that 95 \% of the posterior is within  +- 0.1.
+Provides the selected graph (of differences) based on credible intervals for
+the partial correlations that did not contain zero
+\insertCite{Williams2019}{BGGM}.
 }
 \examples{
+\donttest{
+# note: iter = 250 for demonstrative purposes
+##################
+### example 1: ###
+##################
 # data
-Y1 <- BGGM::bfi[1:500,1:5]
-Y2 <- BGGM::bfi[501:1000, 1:5]
+Y <- bfi
+
+# males and females
+Ymale <- subset(Y, gender == 1,
+               select = -c(gender,
+                           education))
+
+Yfemale <- subset(Y, gender == 2,
+                  select = -c(gender,
+                              education))
 
 # fit model
-fit <- ggm_compare_estimate(Y1, Y2)
+fit <- ggm_compare_estimate(Ymale, Yfemale,
+                           type = "continuous",
+                           iter = 250,
+                           progress = FALSE)
 
-# posterior summary of differences
-summary(fit)
 
-# select (threshold) with credible intervals
-sel <- select(fit)
+E <- select(fit)
 
-# summary
-summary(sel)
-
-# selected differences
-sel$mat_pcor
-
-# adjacency matrix
-sel$mat_adj
+}
 }

@@ -1,176 +1,695 @@
-#' @title GGMs with Credible Intervals or the Region of Practical Equivalence
+#' @title GGM: Estimation
 #'
-#' @description Estimate the conditional (in)dependence structure with credible intervals or the region of practical equivalence.
-#' For the former, there is an analytic solution available, whereas for the latter, samples are efficiently drawn from the posterior
-#' distribution.
+#' @description Estimate the conditional (in)dependence with either an analytic solution or efficiently
+#' sampling from the posterior distribution. These methods were introduced in \insertCite{Williams2019;textual}{BGGM}.
+#' The graph is selected with \code{\link{select.estimate}} and then plotted with \code{\link{plot.select}}.
+#'
 #' @name estimate
-#' @param Y data matrix (\emph{n} by  \emph{p}).
-#' @param iter number of posterior samples
-#' @param analytic analytic solution. see notes for further details.
-#' @param ... not used
 #'
-#' @return  list of class \code{estimate}:
+#' @param Y  Matrix (or data frame) of dimensions \emph{n} (observations) by  \emph{p} (variables).
 #'
-#' \code{analytic = TRUE}:
+#' @param formula An object of class \code{\link[stats]{formula}}. This allows for including
+#' control variables in the model (i.e., \code{~ gender}). See the note for further details.
+#'
+#' @param type Character string. Which type of data for \code{Y} ? The options include \code{continuous},
+#' \code{binary}, \code{ordinal}, or \code{mixed}. Note that mixed can be used for data with only
+#' ordinal variables. See the note for further details.
+#'
+#' @param mixed_type Numeric vector. An indicator of length \emph{p} for which varibles should be treated as ranks.
+#' (1 for rank and 0 to assume normality). The default is currently to treat all integer variables as ranks
+#' when \code{type = "mixed"} and \code{NULL} otherwise. See note for further details.
+#'
+#' @param iter Number of iterations (posterior samples; defaults to 5000).
+#'
+#' @param prior_sd Scale of the prior distribution, approximately the standard deviation of a beta distribution
+#' (defaults to 0.50).
+#'
+#' @param analytic Logical. Should the analytic solution be computed (default is \code{FALSE})?
+#'
+#' @param progress Logical. Should a progress bar be included (defaults to \code{TRUE}) ?
+#'
+#' @param seed An integer for the random seed.
+#'
+#' @param ... Currently ignored.
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#'
+#' @return The returned object of class \code{estimate} contains a lot of information that
+#'         is used for printing and plotting the results. For users of \strong{BGGM}, the following
+#'         are the useful objects:
+#'
 #' \itemize{
-#' \item \code{fit} list of analytic solution estimates
+#'
+#' \item \code{pcor_mat} Partial correltion matrix (posterior mean).
+#'
+#' \item \code{post_samp} An object containing the posterior samples.
+#'
+#' }
+#'
+#'
+#' @details
+#'
+#' The default is to draw samples from the posterior distribution (\code{analytic = FALSE}). The samples are
+#' required for computing edge differences (see \code{\link{ggm_compare_estimate}}), Bayesian R2 introduced in
+#' \insertCite{gelman_r2_2019;textual}{BGGM} (see \code{\link{predictability}}), etc. If the goal is
+#' to *only* determine the non-zero effects, this can be accomplished by setting \code{analytic = TRUE}.
+#' This is particularly useful when a fast solution is needed (see the examples in \code{\link{ggm_compare_ppc}})
+#'
+#' \strong{Controlling for Variables}:
+#'
+#' When controlling for variables, it is assumed that \code{Y} includes \emph{only}
+#' the nodes in the GGM and the control variables. Internally, \code{only} the predictors
+#' that are included in \code{formula} are removed from \code{Y}. This is not behavior of, say,
+#' \code{\link{lm}}, but was adopted to ensure  users do not have to write out each variable that
+#' should be included in the GGM. An example is provided below.
+#'
+#' \strong{Mixed Type}:
+#'
+#'  The term "mixed" is somewhat of a misnomer, because the method can be used for data including \emph{only}
+#'  continuous or \emph{only} discrete variables. This is based on the ranked likelihood which requires sampling
+#'  the ranks for each variable (i.e., the data is not merely transformed to ranks). This is computationally
+#'  expensive when there are many levels. For example, with continuous data, there are as many ranks
+#'  as data points!
+#'
+#'  The option \code{mixed_type} allows the user to determine  which variable should be treated as ranks
+#'  and the "emprical" distribution is used otherwise \insertCite{hoff2007extending}{BGGM}. This is
+#'  accomplished by specifying an indicator vector of length \emph{p}. A one indicates to use the ranks,
+#'  whereas a zero indicates to "ignore" that variable. By default all integer variables are treated as ranks.
+#'
+#' \strong{Dealing with Errors}:
+#'
+#' An error is most likely to arise when \code{type = "ordinal"}. The are two common errors (although still rare):
+#'
 #' \itemize{
-#' \item \code{inv_mu} inverse covariance matrix (mean)
-#' \item \code{inv_var} inverse covariance matrix (variance)
-#' \item \code{partial} partial correlation matrix
-#' }
-#' \item \code{analytic} TRUE
-#' \item \code{call} match.call()
-#' \item \code{dat} data matrix
-#' \item \code{p} number of variables
-#' }
 #'
-#' \code{analytic = FALSE}:
-#' \itemize{
-#' \item \code{parcors_mat} partial correlation matrix
-#' \item \code{inv_mat} inverse covariance matrix
-#' \item \code{posterior samples} posterior samples for partial correlations and inverse covariance matrix
-#' \item \code{p} number of variables
-#' \item \code{dat} data matrix
-#' \item \code{iter} number of posterior samples
-#' \item \code{call} match.call()
-#' \item \code{analytic} FALSE
+#' \item The first is due to sampling the thresholds, especially when the data is heavily skewed.
+#'       This can result in an ill-defined matrix. If this occurs, we recommend to first try
+#'       decreasing \code{prior_sd} (i.e., a more informative prior). If that does not work, then
+#'       change the data type to \code{type = mixed} which then estimates a copula GGM
+#'       (this method can be used for data containing \strong{only} ordinal variable). This should
+#'       work without a problem.
+#'
+#' \item  The second is due to how the ordinal data are categorized. For example, if the error states
+#'        that the index is out of bounds, this indicates that the first category is a zero. This is not allowed, as
+#'        the first category must be one. This is addressed by adding one (e.g., \code{Y + 1}) to the data matrix.
+#'
 #' }
 #'
+#' @note
+#'
+#' \strong{Posterior Uncertainty}:
+#'
+#' A key feature of \bold{BGGM} is that there is a posterior distribution for each partial correlation.
+#' This readily allows for visiualizing uncertainty in the estimates. This feature works
+#' with all data types and is accomplished by plotting the summary of the \code{estimate} object
+#' (i.e., \code{plot(summary(fit))}). Several examples are provided below.
 #'
 #'
-#' @note The default is to draws samples from the posterior distribution (\code{analytic = FALSE}). The samples are required for computing edge differences,
-#' Bayesian R2, etc. If the goal is to *only* determined the non-zero effects, this can be accomplished by setting \code{analytic = TRUE}. This is accomplished
-#' by estimating the posterior mean and variance, from which the credible intervals can computed. Note also sampling is very fast--i.e., less than 1 second
-#' with p = 25, n = 2500 and 5,000 samples. There is one function that makes use of the analytic solution. Namely, \code{loocv} computes node-wise leave-one-out
-#' error (also analytically).
 #'
-#'see \code{methods("estimate")}
+#' \strong{Interpretation of Conditional (In)dependence Models for Latent Data}:
+#'
+#' See \code{\link{BGGM-package}} for details about interpreting GGMs based on latent data
+#' (i.e, all data types besides \code{"continuous"})
+#'
 #' @examples
-#' # p = 20
-#' Y <- BGGM::bfi[, 1:5]
+#' \donttest{
+#' # note: iter = 250 for demonstrative purposes
 #'
-#' # analytic approach (sample by setting analytic = FALSE)
-#' fit_analytic <- estimate(Y, analytic = TRUE)
+#' #########################################
+#' ### example 1: continuous and ordinal ###
+#' #########################################
+#' # data
+#' Y <- ptsd
 #'
-#' # select the graph (edge set E)
-#' E <- select(fit_analytic, ci_width = 0.95)
+#' # continuous
+#'
+#' # fit model
+#' fit <- estimate(Y, type = "continuous",
+#'                 iter = 250)
+#'
+#' # summarize the partial correlations
+#' summ <- summary(fit)
+#'
+#' # plot the summary
+#' plt_summ <- plot(summary(fit))
+#'
+#' # select the graph
+#' E <- select(fit)
+#'
+#' # plot the selected graph
+#' plt_E <- plot(select(fit))
+#'
+#'
+#' # ordinal
+#'
+#' # fit model (note + 1, due to zeros)
+#' fit <- estimate(Y + 1, type = "ordinal",
+#'                 iter = 250)
+#'
+#' # summarize the partial correlations
+#' summ <- summary(fit)
+#'
+#' # plot the summary
+#' plt <- plot(summary(fit))
+#'
+#' # select the graph
+#' E <- select(fit)
+#'
+#' # plot the selected graph
+#' plt_E <- plot(select(fit))
+#'
+#' ##################################
+#' ## example 2: analytic solution ##
+#' ##################################
+#' # (only continuous)
+#'
+#' # data
+#' Y <- ptsd
+#'
+#' # fit model
+#' fit <- estimate(Y, analytic = TRUE)
+#'
+#' # summarize the partial correlations
+#' summ <- summary(fit)
+#'
+#' # plot summary
+#' plt_summ <- plot(summary(fit))
+#'
+#' # select graph
+#' E <- select(fit)
+#'
+#' # plot the selected graph
+#' plt_E <- plot(select(fit))
+#'
+#'}
 #'
 #' @export
-estimate  <- function(Y, iter = 5000,
-                      analytic = FALSE, ...){
+estimate  <- function(Y,
+                      formula = NULL,
+                      type = "continuous",
+                      mixed_type = NULL,
+                      analytic = FALSE,
+                      prior_sd = 0.25,
+                      iter = 5000,
+                      progress = TRUE,
+                      seed = 1,
+                      ...){
 
-  # change to x
-  x <- Y
+  old <- .Random.seed
 
-  # remove the NAs
-  X <- na.omit(as.matrix(x))
+  set.seed(seed)
 
-  # mean center the data
-  X <- scale(X, scale = T)
+  # delta rho ~ beta(delta/2, delta/2)
+  delta <- delta_solve(prior_sd)
 
-  # number of observations
-  n <- nrow(X)
+  # sample posterior
+  if(!analytic){
 
-  # number of columns
-  p <- ncol(X)
+    if(isTRUE(progress)){
 
-  # number of columns inv + pcor
-  cols_samps <- p^2 + p^2
+      message(paste0("BGGM: Posterior Sampling ", ...))
 
-  # scatter matrix
-  S <- t(X) %*% X
+      }
+    # continuous
+    if(type == "continuous"){
 
-  # sample from Wishart
-  if(isFALSE(analytic)){
+      # no control
+      if(is.null(formula)){
 
-    # store posterior samples
-    df_samps <- matrix(0, nrow = iter, ncol = cols_samps)
+        # na omit
+        Y <- as.matrix(na.omit(Y))
 
-  for(i in 1:iter){
+        # scale Y
+        Y <- scale(Y, scale = F)
 
-    # draw directly from Wishart
-    inv_mat <- rWishart(1, n-1, solve(S))[,,1]
+        # design matrix
+        X <- NULL
 
-    # compute partial correlations
-    pcor_mat <-   -1 * cov2cor(inv_mat)
+        # nodes
+        p <- ncol(Y)
 
-    # into the $i$th row
-    df_samps[i,1:cols_samps] <- c(as.numeric(inv_mat), as.numeric(pcor_mat))
+        # number of variables
+        n <- nrow(Y)
 
-  }
+        start <- solve(cov(Y))
 
-  # name the columns
-  inv_names <- unlist(lapply(1:p, function(x)  samps_inv_helper(x, p)))
-  pcor_names <-unlist(lapply(1:p, function(x)  samps_pcor_helper(x, p)))
+        # posterior sample
+        post_samp <- .Call(
+          '_BGGM_Theta_continuous',
+          PACKAGE = 'BGGM',
+          Y = Y,
+          iter = iter + 50,
+          delta = delta,
+          epsilon = 0.1,
+          prior_only = 0,
+          explore = 1,
+          start = start,
+          progress =  progress
+          )
 
-  # name columns
-  colnames(df_samps) <- c(inv_names, pcor_names)
+        # control for variables
+        } else {
 
-  # matrix for storage
-  parcor_mat <-  inv_mat <- matrix(0, ncol = p, p)
+          control_info <- remove_predictors_helper(list(as.data.frame(Y)),
+                                                   formula = formula)
 
-  # posterior means (partials)
-  parcor_mat[] <- colMeans(df_samps[,  grep("pcors", colnames(df_samps))])
-  diag(parcor_mat) <- 0
+          # data
+          Y <- as.matrix(scale(control_info$Y_groups[[1]], scale = F))
 
-  # posterior means (inverse)
-  inv_mat[]   <- colMeans(df_samps[,  grep("cov_inv", colnames(df_samps))])
+          # nodes
+          p <- ncol(Y)
 
-  returned_object  <- list(parcors_mat = parcor_mat, inv_mat = inv_mat,
-                           posterior_samples = as.data.frame(df_samps),
-                           p = ncol(x), dat = X, iter = iter,
-                           call = match.call(), analytic = analytic)
-  # analytic solution
-  } else {
+          # observations
+          n <- nrow(Y)
 
-    # analytic
-    fit <-  analytic_solve(X)
+          # model matrix
+          X <- as.matrix(control_info$model_matrices[[1]])
 
-    returned_object <- list(fit = fit,
-                            analytic = analytic,
-                            call = match.call(),
-                            data = X,
-                            p = ncol(X))
-    }
+          start <- solve(cov(Y))
 
-  class(returned_object) <- "estimate"
+        # posterior sample
+        post_samp <- .Call(
+          "_BGGM_mv_continuous",
+          Y = Y,
+          X = X,
+          delta = delta,
+          epsilon = 0.1,
+          iter = iter + 50,
+          start = start,
+          progress = progress
+        )
+      # end control
+      }
+
+      # binary
+    } else if (type == "binary") {
+
+      # intercept only
+      if (is.null(formula)) {
+
+          # data
+          Y <- as.matrix(na.omit(Y))
+
+          # obervations
+          n <- nrow(Y)
+
+          # nodes
+          p <- ncol(Y)
+
+          X <- matrix(1, n, 1)
+
+          formula <- ~ 1
+
+          start <- solve(cov(Y))
+
+        } else {
+
+          control_info <- remove_predictors_helper(list(as.data.frame(Y)),
+                                                   formula = formula)
+
+          # data
+          Y <-  as.matrix(control_info$Y_groups[[1]])
+
+          # observations
+          n <- nrow(Y)
+
+          # nodes
+          p <- ncol(Y)
+
+          # model matrix
+          X <- as.matrix(control_info$model_matrices[[1]])
+
+          start <- solve(cov(Y))
+          }
+
+      # posterior sample
+      post_samp <-  .Call(
+        "_BGGM_mv_binary",
+        Y = Y,
+        X = X,
+        delta = delta,
+        epsilon = 0.1,
+        iter = iter + 50,
+        beta_prior = 0.0001,
+        cutpoints = c(-Inf, 0, Inf),
+        start = start,
+        progress = progress
+      )
+
+      # ordinal
+      } else if(type == "ordinal"){
+
+      # intercept only
+      if(is.null(formula)){
+
+        # data
+        Y <- as.matrix(na.omit(Y))
+
+        # obervations
+        n <- nrow(Y)
+
+        # nodes
+        p <- ncol(Y)
+
+        # intercept only
+        X <- matrix(1, n, 1)
+
+        formula <- ~ 1
+
+        start <- solve(cov(Y))
+
+        } else {
+
+          control_info <- remove_predictors_helper(list(as.data.frame(Y)),
+                                                   formula = formula)
+
+          # data
+          Y <-  as.matrix(control_info$Y_groups[[1]])
+
+          # observations
+          n <- nrow(Y)
+
+          # nodes
+          p <- ncol(Y)
+
+          # model matrix
+          X <- as.matrix(control_info$model_matrices[[1]])
+
+          start <- solve(cov(Y))
+
+          }
+
+        # categories
+        K <- max(apply(Y, 2, function(x) { length(unique(x))   } ))
+
+        # call c ++
+        post_samp <- .Call(
+          "_BGGM_mv_ordinal_albert",
+          Y = Y,
+          X = X,
+          iter = iter + 50,
+          delta = delta,
+          epsilon = 0.1,
+          K = K,
+          start = start,
+          progress = progress
+        )
+
+        } else if(type == "mixed"){
+
+          # no control variables allowed
+          if(!is.null(formula)){
+
+            warning("formula ignored for mixed data at this time")
+
+            control_info <- remove_predictors_helper(list(as.data.frame(Y)),
+                                                     formula = formula)
+
+            # data
+            Y <-  as.matrix(control_info$Y_groups[[1]])
+
+            formula <- NULL
+
+            X <- NULL
+
+          } else {
+
+             Y <- na.omit(Y)
+
+             X <- NULL
+
+            }
+
+          # default for ranks
+          if(is.null(mixed_type)) {
+
+            idx = colMeans(round(Y) == Y)
+
+            idx = ifelse(idx == 1, 1, 0)
+
+            # user defined
+            } else {
+
+              idx = mixed_type
+
+              }
+
+          # observations
+          n <- nrow(Y)
+
+          # nodes
+          p <- ncol(Y)
+
+          # rank following hoff (2008)
+          rank_vars <- rank_helper(Y)
+
+      post_samp <- .Call(
+        "_BGGM_copula",
+        z0_start = rank_vars$z0_start,
+        levels = rank_vars$levels,
+        K = rank_vars$K,
+        Sigma_start = rank_vars$Sigma_start,
+        iter = iter + 50,
+        delta = delta,
+        epsilon = 0.1,
+        idx = idx,
+        progress = progress
+      )
+      } else {
+
+        stop("'type' not supported: must be continuous, binary, ordinal, or mixed.")
+      }
+
+    if(isTRUE(progress)){
+
+      message("BGGM: Finished")
+
+      }
+
+    pcor_mat <- post_samp$pcor_mat
+
+    results <- list(
+      pcor_mat = pcor_mat,
+      analytic = analytic,
+      formula = formula,
+      post_samp = post_samp,
+      type = type,
+      iter = iter,
+      Y = Y,
+      X = X,
+      call = match.call(),
+      p = p,
+      n = n
+    )
+
+    #  analytic
+    } else {
+
+      if(type != "continuous"){
+
+        warning("analytic solution only available for 'type = continuous'")
+        type <- "continuous"
+
+      }
+      if(!is.null(formula)){
+
+        stop("formula note permitted with the analytic solution")
+
+      }
+
+    Y <- na.omit(Y)
+
+    # observations
+    n <- nrow(Y)
+
+    p <- ncol(Y)
+
+    formula <- NULL
+
+    analytic_fit <- analytic_solve(Y)
+
+    results <- list(pcor_mat = analytic_fit$pcor_mat,
+                    analytic_fit = analytic_fit,
+                    analytic = analytic,
+                    formula = formula,
+                    type = type,
+                    iter = iter,
+                    Y = Y,
+                    call = match.call(),
+                    p = p,
+                    n = n)
+
+    } # end analytic
+
+  .Random.seed <<- old
+
+  returned_object <- results
+
+  class(returned_object) <- c("BGGM",
+                              "estimate",
+                              "default")
   return(returned_object)
 
+  }
+
+#' @title Summary method for \code{estimate.default} objects
+#'
+#' @name summary.estimate
+#'
+#' @description Summarize the posterior distribution of each partial correlation
+#' with the posterior mean and standard deviation.
+#'
+#'
+#' @param object An object of class \code{estimate}
+#'
+#' @param col_names Logical. Should the summary include the column names (default is \code{TRUE})?
+#'                  Setting to \code{FALSE} includes the column numbers (e.g., \code{1--2}).
+#'
+#' @param cred Numeric. The credible interval width for summarizing the posterior
+#' distributions (defaults to 0.95; must be between 0 and 1).
+#'
+#' @param ... Currently ignored.
+#'
+#' @seealso \code{\link{estimate}}
+#'
+#' @return A dataframe containing the summarized posterior distributions.
+#'
+#' @examples
+#' \donttest{
+#' # data
+#' Y <- ptsd[,1:5]
+#'
+#' fit <- estimate(Y, iter = 250,
+#'                 progress = FALSE)
+#'
+#' summary(fit)
+#'
+#'}
+#'
+#' @export
+summary.estimate <- function(object,
+                             col_names = TRUE,
+                             cred = 0.95, ...) {
+
+  # nodes
+  p <- object$p
+
+  # identity matrix
+  I_p <- diag(p)
+
+  # lower bound
+  lb <- (1 - cred) / 2
+
+  # upper bound
+  ub <- 1 - lb
+
+  # column names
+  cn <-  colnames(object$Y)
+
+
+  if(is.null(cn) | isFALSE(col_names)){
+
+    mat_names <- sapply(1:p , function(x) paste(1:p, x, sep = "--"))[upper.tri(I_p)]
+
+  } else {
+
+    mat_names <-  sapply(cn , function(x) paste(cn, x, sep = "--"))[upper.tri(I_p)]
+
+  }
+
+
+  if(isFALSE(object$analytic)){
+
+    post_mean <- round(object$pcor_mat[upper.tri(I_p)], 3)
+
+    post_sd  <- round(apply(object$post_samp$pcors[,, 51:(object$iter + 50) ], 1:2, sd), 3)[upper.tri(I_p)]
+
+    post_lb <- round(apply( object$post_samp$pcors[,, 51:(object$iter + 50) ], 1:2, quantile, lb), 3)[upper.tri(I_p)]
+
+    post_ub <- round(apply( object$post_samp$pcors[,, 51:(object$iter + 50) ], 1:2, quantile, ub), 3)[upper.tri(I_p)]
+
+    dat_results <-
+      data.frame(
+      relation = mat_names,
+      post_mean =  post_mean,
+      post_sd = post_sd,
+      post_lb = post_lb,
+      post_ub = post_ub
+    )
+
+  colnames(dat_results) <- c(
+    "Relation",
+    "Post.mean",
+    "Post.sd",
+    "Cred.lb",
+    "Cred.ub")
+
+  } else {
+
+    dat_results <-
+      data.frame(
+        relation = mat_names,
+        post_mean =  object$pcor_mat[upper.tri(I_p)]
+      )
+
+    colnames(dat_results) <- c(
+      "Relation",
+      "Post.mean")
+
+  }
+
+
+  returned_object <- list(dat_results = dat_results,
+                          object = object)
+
+
+class(returned_object) <- c("BGGM", "estimate",
+                            "summary_estimate",
+                            "summary.estimate")
+returned_object
 }
 
-#' @name print.estimate
-#' @title  Print method for \code{estimate.default} objects
-#'
-#' @param x An object of class \code{estimate}
-#' @param ... currently ignored
-#' @seealso \code{\link{select.estimate}}
-#' @examples
-#' # data
-#' Y <- BGGM::bfi[, 1:5]
-#' # analytic approach (sample by setting analytic = FALSE)
-#' fit <- estimate(Y, analytic = TRUE)
-#' fit
-#' @export
-print.estimate <- function(x, ...){
+
+print_summary_estimate <- function(x, ...) {
+    cat("BGGM: Bayesian Gaussian Graphical Models \n")
+    cat("--- \n")
+    cat("Type:",  x$object$type, "\n")
+    cat("Analytic:", x$object$analytic, "\n")
+    cat("Formula:", paste(as.character(x$object$formula), collapse = " "), "\n")
+    # number of iterations
+    cat("Posterior Samples:", x$object$iter, "\n")
+    # number of observations
+    cat("Observations (n):\n")
+    # number of variables
+    cat("Nodes (p):", x$object$p, "\n")
+    # number of edges
+    cat("Relations:", .5 * (x$object$p * (x$object$p - 1)), "\n")
+    cat("--- \n")
+    cat("Call: \n")
+    print(x$object$call)
+    cat("--- \n")
+    cat("Estimates:\n")
+    print(x$dat_results, row.names = F)
+    cat("--- \n")
+}
+
+
+print_estimate <- function(x, ...){
   cat("BGGM: Bayesian Gaussian Graphical Models \n")
   cat("--- \n")
-  # analytic == TRUE
-  if(!isFALSE( x$analytic)){
-    cat("Type: Estimation (Analytic Solution) \n")
-  }
-  # analytic  == FALSE
-  if(isFALSE( x$analytic)){
-    cat("Type: Estimation (Sampling) \n")
-  }
+  cat("Type:",  x$type, "\n")
+  cat("Analytic:", x$analytic, "\n")
+  cat("Formula:", paste(as.character(x$formula), collapse = " "), "\n")
   # number of iterations
   cat("Posterior Samples:", x$iter, "\n")
   # number of observations
-  cat("Observations (n):", nrow(x$dat), "\n")
+  cat("Observations (n):\n")
   # number of variables
-  cat("Variables (p):", x$p, "\n")
+  cat("Nodes (p):", x$p, "\n")
   # number of edges
-  cat("Edges:", .5 * (x$p * (x$p-1)), "\n")
+  cat("Relations:", .5 * (x$p * (x$p-1)), "\n")
   cat("--- \n")
   cat("Call: \n")
   print(x$call)
@@ -179,148 +698,83 @@ print.estimate <- function(x, ...){
 }
 
 
-#' @name summary.estimate
-#' @title Summary method for \code{estimate.default} objects
+
+#' @title Plot \code{summary.estimate} Objects
 #'
-#' @param object An object of class \code{estimate}
-#' @seealso \code{\link{select.estimate}}
-#' @param ... currently ignored
-#' @param cred credible interval width
-#' @return A list containing the summarized posterior distributions
-#' # data
-#' Y <- BGGM::bfi[, 1:5]
-#' # analytic approach (sample by setting analytic = FALSE)
-#' fit <- estimate(Y, analytic = TRUE)
-#' summary(fit)
-#' @export
-summary.estimate <- function(object, cred = 0.95, ...) {
-
-  if (isTRUE(object$analytic)) {
-    returned_object <- list(object = object)
-
-    } else {
-
-    lb <- (1 - cred) / 2
-    ub <- 1 - lb
-
-    name_temp <- matrix(0, object$p, object$p)
-
-    edge_names <- unlist(lapply(1:object$p , function(x)
-      paste(1:object$p, x, sep = "--")))
-
-    name_temp[] <- edge_names
-    up_tri <- name_temp[upper.tri(name_temp)]
-
-    pcor_samples <-
-      object$posterior_samples[,  grep("pcors", colnames(object$posterior_samples))]
-
-    colnames(pcor_samples) <- edge_names
-    pcor_upper <- pcor_samples[, up_tri]
-
-    ci <- apply(
-      pcor_upper,
-      MARGIN = 2,
-      FUN = function(x) {
-        quantile(x, probs = c(lb, ub))
-      }
-    )
-    diff_mu <-
-      apply(pcor_upper, MARGIN = 2, mean)
-
-    diff_sd <-
-      apply(pcor_upper, MARGIN = 2, sd)
-
-    dat_results <-
-      data.frame(
-        edge = name_temp[upper.tri(name_temp)],
-        post_mean =  round(diff_mu, 3),
-        post_sd = round(diff_sd, 3),
-        ci = round(t(ci), 3)
-      )
-
-    colnames(dat_results) <- c(
-      "Edge",
-      "Estimate",
-      "Est.Error",
-      "Cred.lb", "Cred.ub")
-
-    returned_object <- list(dat_results = dat_results,
-                            object = object,
-                            pcor_samples = pcor_samples)
-  }
-
-  class(returned_object) <- "summary.estimate"
-  returned_object
-}
-
-#' @title Summary method for \code{summary.estimate} objects
-#' @name print.summary.estimate
+#' @description Visualize the posterior distributions for each partial correlation.
+#'
+#' @name plot.summary.estimate
 #'
 #' @param x An object of class \code{summary.estimate}
-#' @param ... currently ignored
-#' @seealso \code{\link{summary.estimate}}
+#'
+#' @param size Numeric. The size for the points (defaults to \code{2}).
+#'
+#' @param color Character string. The color for the error bars.
+#' (defaults to \code{"black"}).
+#'
+#' @param width Numeric. The width of error bar ends (defaults to \code{0}).
+#'
+#' @param ... Currently ignored
+#'
+#' @seealso \code{\link{estimate}}
+#'
+#' @return A \code{ggplot} object.
+#'
+#' @examples
+#' \donttest{
+#' # data
+#' Y <- ptsd[,1:5]
+#'
+#' fit <- estimate(Y, iter = 250,
+#'                 progress = FALSE)
+#'
+#'
+#' plot(summary(fit))
+#'
+#' }
+#'
 #' @export
-print.summary.estimate <- function(x, ...) {
-  # analytic == TRUE
-  if (isTRUE(x$object$analytic)) {
-    cat(print(x$object), "\n")
-    cat("note: posterior summary not available for analytic solution")
-  } else {
-    cat("BGGM: Bayesian Gaussian Graphical Models \n")
-    cat("--- \n")
-    # number of iterations
-    cat("Posterior Samples:", x$object$iter, "\n")
-    # number of observations
-    cat("Observations (n):", nrow(x$object$dat), "\n")
-    # number of variables
-    cat("Variables (p):", x$object$p, "\n")
-    # number of edges
-    cat("Edges:", .5 * (x$object$p * (x$object$p - 1)), "\n")
-    cat("--- \n")
-    cat("Call: \n")
-    print(x$object$call)
-    cat("--- \n")
-    cat("Estimates:\n\n")
-    print(x$dat_results, row.names = F)
-    cat("--- \n")
+plot.summary.estimate <- function(x,
+                                  color = "black",
+                                  size = 2,
+                                  width = 0, ...){
 
-  }
+    dat_temp <- x$dat_results[order(x$dat_results$Post.mean,
+                                         decreasing = F), ]
+
+    dat_temp$Relation <-
+      factor(dat_temp$Relation,
+             levels = dat_temp$Relation,
+             labels = dat_temp$Relation)
+
+
+   if(isFALSE(x$object$analytic)){
+    ggplot(dat_temp,
+           aes(x = Relation,
+               y = Post.mean)) +
+
+      geom_errorbar(aes(ymax = dat_temp[, 4],
+                        ymin = dat_temp[, 5]),
+                    width = width,
+                    color = color) +
+      geom_point(size = size) +
+      xlab("Index") +
+      theme(axis.text.x = element_text(
+        angle = 90,
+        vjust = 0.5,
+        hjust = 1
+      ))
+   } else {
+
+     ggplot(dat_temp,
+            aes(x = Relation,
+                y = Post.mean)) +
+       geom_point(size = size) +
+       xlab("Index") +
+       theme(axis.text.x = element_text(
+         angle = 90,
+         vjust = 0.5,
+         hjust = 1
+       ))
+     }
 }
-
-#' Plot \code{summary.estimate}
-#'
-#' @param x an object of class \code{summary.estimate}
-#' @param color color of error bar
-#' @param width width of error bar cap
-#' @param ... currently ignored
-#'
-#' @return an object of class \code{ggplot}
-#' @export
-plot.summary.estimate <- function(x, color = "black", width = 0,...){
-
-  dat_temp <- x$dat_results[order(x$dat_results$Estimate,
-                                  decreasing = F), ]
-
-  dat_temp$Edge <-
-    factor(dat_temp$Edge,
-           levels = dat_temp$Edge,
-           labels = dat_temp$Edge)
-
-  dat_temp$selected <-
-    as.factor(ifelse(dat_temp[, 4] < 0 & dat_temp[, 5] > 0, 0, 1))
-
-  plt <- ggplot(dat_temp,
-                aes(x = Edge,
-                    y = Estimate,
-                    color = selected)) +
-
-    geom_errorbar(aes(ymax = dat_temp[, 4],
-                      ymin = dat_temp[, 5]),
-                  width = width,
-                  color = color) +
-    geom_point() +
-    xlab("Index")
-
-  return(plt)
- }
-

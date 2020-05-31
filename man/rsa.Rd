@@ -3,8 +3,10 @@
 \docType{data}
 \name{rsa}
 \alias{rsa}
-\title{Resilience Scale of Adults (RSA)}
-\format{A data frame with 28 variables and 1973 observations (5 point Likert scale)}
+\title{Data: Resilience Scale of Adults (RSA)}
+\format{
+A data frame with 28 variables and 1973 observations (5 point Likert scale)
+}
 \usage{
 data("rsa")
 }

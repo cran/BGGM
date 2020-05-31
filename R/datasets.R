@@ -1,7 +1,7 @@
-#' post-traumatic stress disorder dataset
+#' Data: Post-Traumatic Stress Disorder
 #'
-#' A dataset containing items that measure Post-traumatic stress disorder symptoms. There are 20 variables (p) and
-#' 221 observations (n)
+#' A dataset containing items that measure Post-traumatic stress disorder symptoms \insertCite{armour2017network}{BGGM}.
+#' There are 20 variables (\emph{p}) and  221 observations (\emph{n}).
 #'
 #' \itemize{
 #'   \item Intrusive Thoughts
@@ -26,20 +26,26 @@
 #' }
 #'
 #' @docType data
+#'
 #' @keywords datasets
+#'
 #' @name ptsd
+#'
 #' @usage data("ptsd")
+#'
 #' @references
-#' Epskamp, S., & Fried, E. I. (2018). A tutorial on regularized partial correlation networks. Psychological methods.
-#'  @format A data frame with 221 rows and 20 variables
+#'
+#' \insertAllCited{}
+#'
+#' @format A dataframe with 221 rows and 20 variables
 NULL
 
 
 
-#' post-traumatic stress disorder correlation matrix (# 1)
+#' Data: Post-Traumatic Stress Disorder (Sample # 1)
 #'
-#' A dataset containing items that measure Post-traumatic stress disorder symptoms. There are 16 variables in total.
-#' The correlation matrix was estimated from 526 individuals.
+#' A correlation matrix that includes 16 variables. The correlation matrix was estimated from 526
+#' individuals \insertCite{fried2018replicability}{BGGM}.
 #'
 #' \itemize{
 #'   \item Intrusive Thoughts
@@ -61,23 +67,31 @@ NULL
 #' }
 #'
 #' @docType data
+#'
 #' @keywords datasets
+#'
 #' @name ptsd_cor1
+#'
 #' @examples
+#'
 #' data(ptsd_cor1)
-#' Y <- MASS::mvrnorm(n = 965, mu = rep(0, 16),
-#'                    Sigma = ptsd_cor1,  empirical = TRUE)
+#'
+#' Y <- MASS::mvrnorm(n = 526,
+#'                    mu = rep(0, 16),
+#'                    Sigma = ptsd_cor1,
+#'                    empirical = TRUE)
+#'
 #' @references
-#' Fried, E. I., Eidhof, M. B., Palic, S., Costantini, G., Huisman-van Dijk, H. M., Bockting, C. L., ... & Karstoft, K. I. (2018).
-#' Replicability and generalizability of posttraumatic stress disorder (PTSD) networks: a cross-cultural multisite study of PTSD
-#' symptoms in four trauma patient samples. Clinical Psychological Science, 6(3), 335-351.
-#' @format A (correlation) matrix with 16 variables
+#'
+#' \insertAllCited{}
+#'
+#' @format A correlation matrix with 16 variables
 NULL
 
-#' post-traumatic stress disorder correlation matrix (# 2)
+#' Data: Post-Traumatic Stress Disorder (Sample # 2)
 #'
-#' A dataset containing items that measure Post-traumatic stress disorder symptoms. There are 16 variables in total.
-#' The correlation matrix was estimated from 365 individuals.
+#' A correlation matrix that includes 16 variables. The correlation matrix
+#' was estimated from 365 individuals \insertCite{fried2018replicability}{BGGM}.
 #'
 #' \itemize{
 #'   \item Intrusive Thoughts
@@ -99,25 +113,31 @@ NULL
 #' }
 #'
 #' @docType data
+#'
 #' @keywords datasets
+#'
 #' @name ptsd_cor2
+#'
 #' @examples
 #' data(ptsd_cor2)
-#' Y <- MASS::mvrnorm(n = 365, mu = rep(0, 16),
-#'                    Sigma = ptsd_cor2,  empirical = TRUE)
+#' Y <- MASS::mvrnorm(n = 365,
+#'                    mu = rep(0, 16),
+#'                    Sigma = ptsd_cor2,
+#'                    empirical = TRUE)
 #' @references
-#' Fried, E. I., Eidhof, M. B., Palic, S., Costantini, G., Huisman-van Dijk, H. M., Bockting, C. L., ... & Karstoft, K. I. (2018).
-#' Replicability and generalizability of posttraumatic stress disorder (PTSD) networks: a cross-cultural multisite study of PTSD
-#' symptoms in four trauma patient samples. Clinical Psychological Science, 6(3), 335-351.
-#' @format A (correlation) matrix with 16 variables
+#'
+#' \insertAllCited{}
+#'
+#' @format A correlation matrix with 16 variables
 NULL
 
-#' post-traumatic stress disorder correlation matrix (# 3)
+#'  Data: Post-Traumatic Stress Disorder  (Sample # 3)
 #'
-#' A dataset containing items that measure Post-traumatic stress disorder symptoms. There are 16 variables in total.
-#' The correlation matrix was estimated from 926 individuals.
+#' A correlation matrix that includes 16 variables. The correlation matrix
+#' was estimated from 926 individuals \insertCite{fried2018replicability}{BGGM}.
 #'
 #' \itemize{
+#'
 #'   \item Intrusive Thoughts
 #'   \item Nightmares
 #'   \item Flashbacks
@@ -137,23 +157,30 @@ NULL
 #' }
 #'
 #' @docType data
+#'
 #' @keywords datasets
+#'
 #' @name ptsd_cor3
+#'
 #' @examples
 #' data(ptsd_cor3)
-#' Y <- MASS::mvrnorm(n = 926, mu = rep(0, 16),
-#'                    Sigma = ptsd_cor3,  empirical = TRUE)
+#' Y <- MASS::mvrnorm(n = 926,
+#'                    mu = rep(0, 16),
+#'                    Sigma = ptsd_cor3,
+#'                    empirical = TRUE)
+#'
 #' @references
-#' Fried, E. I., Eidhof, M. B., Palic, S., Costantini, G., Huisman-van Dijk, H. M., Bockting, C. L., ... & Karstoft, K. I. (2018).
-#' Replicability and generalizability of posttraumatic stress disorder (PTSD) networks: a cross-cultural multisite study of PTSD
-#' symptoms in four trauma patient samples. Clinical Psychological Science, 6(3), 335-351.
-#' @format A (correlation) matrix with 16 variables
+#'
+#' \insertAllCited{}
+#'
+#' @format A correlation matrix with 16 variables
+#'
 NULL
 
-#' post-traumatic stress disorder correlation matrix (# 4)
+#' Data: Post-Traumatic Stress Disorder  (Sample # 4)
 #'
-#' A dataset containing items that measure Post-traumatic stress disorder symptoms. There are 16 variables in total.
-#' The correlation matrix was estimated from 965 individuals.
+#' A correlation matrix that includes 16 variables. The correlation matrix
+#' was estimated from 965 individuals \insertCite{fried2018replicability}{BGGM}.
 #'
 #' \itemize{
 #'   \item Intrusive Thoughts
@@ -175,23 +202,30 @@ NULL
 #' }
 #'
 #' @docType data
+#'
 #' @keywords datasets
+#'
 #' @name ptsd_cor4
+#'
 #' @examples
 #' data(ptsd_cor4)
-#' Y <- MASS::mvrnorm(n = 965, mu = rep(0, 16),
-#'                    Sigma = ptsd_cor4,  empirical = TRUE)
+#' Y <- MASS::mvrnorm(n = 965,
+#'                    mu = rep(0, 16),
+#'                    Sigma = ptsd_cor4,
+#'                    empirical = TRUE)
+#'
 #' @references
-#' Fried, E. I., Eidhof, M. B., Palic, S., Costantini, G., Huisman-van Dijk, H. M., Bockting, C. L., ... & Karstoft, K. I. (2018).
-#' Replicability and generalizability of posttraumatic stress disorder (PTSD) networks: a cross-cultural multisite study of PTSD
-#' symptoms in four trauma patient samples. Clinical Psychological Science, 6(3), 335-351.
-#' @format A (correlation) matrix with 16 variables
+#'
+#' \insertAllCited{}
+#'
+#' @format A correlation matrix with 16 variables
 NULL
 
-#' 25 Personality items representing 5 factors
+
+#' Data: 25 Personality items representing 5 factors
 #'
-#' This data set and the documentation was taken from the \strong{psych} package. Further details can be found in the documentation
-#' of the \strong{psych} package.
+#' This dataset and the corresponding documentation was taken from the \strong{psych} package. We refer users to that
+#' package for further details \insertCite{psych}{BGGM}.
 #'
 #' \itemize{
 #'   \item \code{A1} Am indifferent to the feelings of others. (q_146)
@@ -224,44 +258,50 @@ NULL
 #' }
 #'
 #' @docType data
+#'
 #' @keywords datasets
+#'
 #' @name bfi
+#'
+#' @usage data("bfi")
+#'
 #' @references
-#' Revelle, W. (2018) psych: Procedures for Personality and Psychological Research, Northwestern University,
-#' Evanston, Illinois, USA, https://CRAN.R-project.org/package=psych Version = 1.8.12.
-#' @format A data frame with 25 variables and 2800 observations (but with missing data)
+#'
+#' \insertAllCited{}
+#'
+#' @format A data frame with 25 variables and 2800 observations (including missing values)
 NULL
 
 
 
-#' Contingencies of Self-Worth Scale (CSWS)
+#' Data: Contingencies of Self-Worth Scale (CSWS)
 #'
 #' A dataset containing items from the Contingencies of Self-Worth Scale (CSWS) scale. There are 35 variables  and
 #' 680 observations
 #'
 #' \itemize{
 #'   \item \code{1} When I think I look attractive, I feel good about myself
-#'   \item \code{2} My self-worth is based on God’s love
+#'   \item \code{2} My self-worth is based on God's love
 #'   \item \code{3} I feel worthwhile when I perform better than others on a task or skill.
 #'   \item \code{4} My self-esteem is unrelated to how I feel about the way my body looks.
 #'   \item \code{5} Doing something I know is wrong makes me lose my self-respect
-#'   \item \code{6} I don’t care if other people have a negative opinion about me.
+#'   \item \code{6} I don't care if other people have a negative opinion about me.
 #'   \item \code{7} Knowing that my family members love me makes me feel good about myself.
-#'   \item \code{8} I feel worthwhile when I have God’s love.
-#'   \item \code{9} I can’t respect myself if others don’t respect me.
+#'   \item \code{8} I feel worthwhile when I have God's love.
+#'   \item \code{9} I can’t respect myself if others don't respect me.
 #'   \item \code{10} My self-worth is not influenced by the quality of my relationships with my family members.
 #'   \item \code{11} Whenever I follow my moral principles, my sense of self-respect gets a boost.
 #'   \item \code{12} Knowing that I am better than others on a task raises my self-esteem.
-#'   \item \code{13} My opinion about myself isn’t tied to how well I do in school.
-#'   \item \code{14} I couldn’t respect myself if I didn’t live up to a moral code.
-#'   \item \code{15} I don’t care what other people think of me.
+#'   \item \code{13} My opinion about myself isn't tied to how well I do in school.
+#'   \item \code{14} I couldn't respect myself if I didn't live up to a moral code.
+#'   \item \code{15} I don't care what other people think of me.
 #'   \item \code{16} When my family members are proud of me, my sense of self-worth increases.
 #'   \item \code{17} My self-esteem is influenced by how attractive I think my face or facial features are.
-#'   \item \code{18} My self-esteem would suffer if I didn’t have God’s love.
+#'   \item \code{18} My self-esteem would suffer if I didn’t have God's love.
 #'   \item \code{19} Doing well in school gives me a sense of selfrespect.
 #'   \item \code{20} Doing better than others gives me a sense of self-respect.
-#'   \item \code{21} My sense of self-worth suffers whenever I think I don’t look good.
-#'   \item \code{22} I feel better about myself when I know I’m doing well academically.
+#'   \item \code{21} My sense of self-worth suffers whenever I think I don't look good.
+#'   \item \code{22} I feel better about myself when I know I'm doing well academically.
 #'   \item \code{23} What others think of me has no effect on what I think about myself.
 #'   \item \code{24} When I don’t feel loved by my family, my selfesteem goes down.
 #'   \item \code{25} My self-worth is affected by how well I do when I am competing with others.
@@ -313,7 +353,7 @@ NULL
 
 
 
-#' Toronto Alexithymia Scale (TAS)
+#' Data: Toronto Alexithymia Scale (TAS)
 #'
 #' A dataset containing items from the Toronto Alexithymia Scale (TAS). There are 20 variables  and
 #' 1925 observations
@@ -370,7 +410,7 @@ NULL
 
 
 
-#' Interpersonal Reactivity Index (IRI)
+#' Data: Interpersonal Reactivity Index (IRI)
 #'
 #' A dataset containing items from the Interpersonal Reactivity Index (IRI; an empathy measure). There are 28 variables  and
 #' 1973 observations
@@ -442,7 +482,7 @@ NULL
 
 
 
-#' Resilience Scale of Adults (RSA)
+#' Data: Resilience Scale of Adults (RSA)
 #'
 #' A dataset containing items from the Resilience Scale of Adults (RSA). There are 33 items  and
 #' 675 observations
@@ -500,9 +540,12 @@ NULL
 #' Structured style: items 23, 28, 30
 #'
 #' @docType data
+#'
 #' @keywords datasets
 #' @name rsa
+#'
 #' @usage data("rsa")
+#'
 #' @examples
 #' data("rsa")
 #'
@@ -514,3 +557,309 @@ NULL
 #' @format A data frame with 28 variables and 1973 observations (5 point Likert scale)
 NULL
 
+
+#' @title Data: Sachs Network
+#'
+#' @description Protein expression in human immune system cells
+#'
+#' @name Sachs
+#'
+#' @docType data
+#'
+#' @keywords datasets
+#'
+#' @usage data("Sachs")
+#'
+#' @examples
+#' data("Sachs")
+#'
+#' @format A data frame containing 7466 cells (n = 7466) and flow cytometry
+#'  measurements of 11 (p = 11) phosphorylated proteins and phospholipids
+#'
+#'  @references
+#'  Sachs, K., Gifford, D., Jaakkola, T., Sorger, P., & Lauffenburger, D. A. (2002).
+#'  Bayesian network approach to cell signaling pathway modeling. Sci. STKE, 2002(148), pe38-pe38.
+NULL
+
+
+
+#' Data: Autism and Obssesive Compulsive Disorder
+#'
+#' A correlation matrix with 17 variables in total (autsim: 9; OCD: 8).
+#' The sample size was 213.
+#'
+#'
+#' \strong{Autism}:
+#'
+#' \itemize{
+#'
+#'   \item \code{CI}  Circumscribed interests
+#'   \item \code{UP}  Unusual preoccupations
+#'   \item \code{RO}  Repetitive use of objects or interests in parts of objects
+#'   \item \code{CR}  Compulsions and/or rituals
+#'   \item \code{CI}  Unusual sensory interests
+#'   \item \code{SM}  Complex mannerisms or stereotyped body movements
+#'   \item \code{SU}  Stereotyped utterances/delayed echolalia
+#'   \item \code{NIL} Neologisms and/or idiosyncratic language
+#'   \item \code{VR}  Verbal rituals
+#' }
+#'
+#' \strong{OCD}
+#'
+#' \itemize{
+#'   \item \code{CD} Concern with things touched due to dirt/bacteria
+#'   \item \code{TB} Thoughts of doing something bad around others
+#'   \item \code{CT} Continual thoughts that do not go away
+#'   \item \code{HP} Belief that someone/higher power put reoccurring thoughts in their head
+#'   \item \code{CW} Continual washing
+#'   \item \code{CCh} Continual checking CntCheck
+#'   \item \code{CC} Continual counting/repeating
+#'   \item \code{RD} Repeatedly do things until it feels good or just right
+#'
+#' }
+#'
+#'
+#' @docType data
+#'
+#' @keywords datasets
+#' @name asd_ocd
+#'
+#' @usage data("asd_ocd")
+#'
+#' @examples
+#' data("asd_ocd")
+#'
+#' # generate continuous
+#' Y <- MASS::mvrnorm(n = 213,
+#'                    mu = rep(0, 17),
+#'                    Sigma = asd_ocd,
+#'                    empirical = TRUE)
+#'
+#'
+#' @format A correlation matrix including 17 variables. These data were measured on a 4 level likert scale.
+#'
+#' @references
+#' Jones, P. J., Ma, R., & McNally, R. J. (2019). Bridge centrality:
+#' A network approach
+#' to understanding comorbidity. Multivariate behavioral research, 1-15.
+#'
+#' Ruzzano, L., Borsboom, D., & Geurts, H. M. (2015).
+#' Repetitive behaviors in autism and obsessive-compulsive
+#' disorder: New perspectives from a network analysis.
+#' Journal of Autism and Developmental Disorders, 45(1),
+#' 192-202. doi:10.1007/s10803-014-2204-9
+NULL
+
+
+
+#' Data: Depression and Anxiety (Time 1)
+#'
+#' A data frame containing 403 observations (n = 403) and 16 variables (p = 16) measured on the 4-point
+#' likert scale (depression: 9; anxiety: 7).
+#'
+#' \strong{Depression}:
+#'
+#' \itemize{
+#'   \item \code{PHQ1}  Little interest or pleasure in doing things?
+#'   \item \code{PHQ2}  Feeling down, depressed, or hopeless?
+#'   \item \code{PHQ3}  Trouble falling or staying asleep, or sleeping too much?
+#'   \item \code{PHQ4}  Feeling tired or having little energy?
+#'   \item \code{PHQ5}  Poor appetite or overeating?
+#'   \item \code{PHQ6} Feeling bad about yourself — or that you are a failure or have let
+#'                     yourself or your family down?
+#'   \item \code{PHQ7}  Trouble concentrating on things, such as reading the newspaper or
+#'                      watching television?
+#'   \item \code{PHQ8} Moving or speaking so slowly that other people could have noticed? Or so
+#'                     fidgety or restless that you have been moving a lot more than usual?
+#'   \item \code{PHQ9}  Thoughts that you would be better off dead, or thoughts of hurting yourself
+#'                      in some way?
+#' }
+#'
+#'   \strong{Anxiety}
+#'   \itemize{
+#'
+#'
+#'
+#'   \item \code{GAD1} Feeling nervous, anxious, or on edge
+#'   \item \code{GAD2} Not being able to stop or control worrying
+#'   \item \code{GAD3} Worrying too much about different things
+#'   \item \code{GAD4} Trouble relaxing
+#'   \item \code{GAD5} Being so restless that it's hard to sit still
+#'   \item \code{GAD6} Becoming easily annoyed or irritable
+#'   \item \code{GAD7} Feeling afraid as if something awful might happen
+#' }
+#'
+#'
+#' @docType data
+#'
+#' @keywords datasets
+#' @name depression_anxiety_t1
+#'
+#' @usage data("depression_anxiety_t1")
+#'
+#' @format A data frame containing 403 observations (n = 7466) and 16 variables (p = 16) measured on the 4-point
+#' likert scale.
+#'
+#' @examples
+#' data("depression_anxiety_t1")
+#' labels<- c("interest", "down", "sleep",
+#'             "tired", "appetite", "selfest",
+#'            "concen", "psychmtr", "suicid",
+#'            "nervous", "unctrworry", "worrylot",
+#'            "relax", "restless", "irritable", "awful")
+#'
+#'
+#' @references
+#' Forbes, M. K., Baillie, A. J., & Schniering, C. A. (2016). A structural equation modeling
+#' analysis of the relationships between depression,anxiety, and sexual problems over time.
+#' The Journal of Sex Research, 53(8), 942-954.
+#'
+#' Forbes, M. K., Wright, A. G., Markon, K. E., & Krueger, R. F. (2019). Quantifying the reliability and replicability of psychopathology network characteristics.
+#' Multivariate behavioral research, 1-19.
+#'
+#' Jones, P. J., Williams, D. R., & McNally, R. J. (2019). Sampling variability is not nonreplication:
+#' a Bayesian reanalysis of Forbes, Wright, Markon, & Krueger.
+NULL
+
+
+
+
+
+#' Data: Depression and Anxiety (Time 2)
+#'
+#' A data frame containing 403 observations (n = 403) and 16 variables (p = 16) measured on the 4-point
+#' likert scale  (depression: 9; anxiety: 7).
+#'
+#' \strong{Depression}:
+#'
+#' \itemize{
+#'   \item \code{PHQ1}  Little interest or pleasure in doing things?
+#'   \item \code{PHQ2}  Feeling down, depressed, or hopeless?
+#'   \item \code{PHQ3}  Trouble falling or staying asleep, or sleeping too much?
+#'   \item \code{PHQ4}  Feeling tired or having little energy?
+#'   \item \code{PHQ5}  Poor appetite or overeating?
+#'   \item \code{PHQ6} Feeling bad about yourself — or that you are a failure or have let
+#'                     yourself or your family down?
+#'   \item \code{PHQ7}  Trouble concentrating on things, such as reading the newspaper or
+#'                      watching television?
+#'   \item \code{PHQ8} Moving or speaking so slowly that other people could have noticed? Or so
+#'                     fidgety or restless that you have been moving a lot more than usual?
+#'   \item \code{PHQ9}  Thoughts that you would be better off dead, or thoughts of hurting yourself
+#'                      in some way?
+#' }
+#'
+#'   \strong{Anxiety}
+#'   \itemize{
+#'
+#'
+#'
+#'   \item \code{GAD1} Feeling nervous, anxious, or on edge
+#'   \item \code{GAD2} Not being able to stop or control worrying
+#'   \item \code{GAD3} Worrying too much about different things
+#'   \item \code{GAD4} Trouble relaxing
+#'   \item \code{GAD5} Being so restless that it's hard to sit still
+#'   \item \code{GAD6} Becoming easily annoyed or irritable
+#'   \item \code{GAD7} Feeling afraid as if something awful might happen
+#' }
+#'
+#'
+#' @docType data
+#'
+#' @keywords datasets
+#' @name depression_anxiety_t2
+#'
+#' @usage data("depression_anxiety_t2")
+#'
+#' @format A data frame containing 403 observations (n = 7466) and 16 variables (p = 16) measured on the 4-point
+#' likert scale.
+#'
+#' @examples
+#' data("depression_anxiety_t2")
+#' labels<- c("interest", "down", "sleep",
+#'             "tired", "appetite", "selfest",
+#'            "concen", "psychmtr", "suicid",
+#'            "nervous", "unctrworry", "worrylot",
+#'            "relax", "restless", "irritable", "awful")
+#'
+#'
+#' @references
+#' Forbes, M. K., Baillie, A. J., & Schniering, C. A. (2016). A structural equation modeling
+#' analysis of the relationships between depression,anxiety, and sexual problems over time.
+#' The Journal of Sex Research, 53(8), 942-954.
+#'
+#' Forbes, M. K., Wright, A. G., Markon, K. E., & Krueger, R. F. (2019). Quantifying the reliability and replicability of psychopathology network characteristics.
+#' Multivariate behavioral research, 1-19.
+#'
+#' Jones, P. J., Williams, D. R., & McNally, R. J. (2019). Sampling variability is not nonreplication:
+#' a Bayesian reanalysis of Forbes, Wright, Markon, & Krueger.
+NULL
+
+
+
+
+#' Data: Women and Mathematics
+#'
+#' A data frame containing 1190 observations (n = 1190) and 6 variables (p = 6) measured on the binary scale.
+#'
+#'\itemize{
+#'   \item \code{1}  Lecture attendance (attend/did not attend)
+#'   \item \code{2}  Gender (male/female)
+#'   \item \code{3}  School type (urban/suburban)
+#'   \item \code{4}  “I will be needing Mathematics in my future work” (agree/disagree)
+#'   \item \code{5}  Subject preference (math/science vs. liberal arts)
+#'   \item \code{6} Future plans (college/job)
+#'}
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @docType data
+#'
+#' @keywords datasets
+#' @name women_math
+#'
+#' @usage data("women_math")
+#'
+#' @format A data frame containing 1190 observations (n = 1190) and 6 variables (p = 6) measured on the binary scale
+#'         \insertCite{fowlkes1988evaluating}{BGGM}. These data have been analyzed in \insertCite{tarantola2004mcmc;textual}{BGGM}
+#'         and in \insertCite{madigan1994model}{BGGM}. The variable descriptions were copied from  (section 5.2 )
+#'         \insertCite{@section 5.2, @talhouk2012efficient}{BGGM}
+#'
+#' @examples
+#' data("women_math")
+NULL
+
+
+#' @title Data: 1994 General Social Survey
+#'
+#' @description  A data frame containing 1002 rows and 7 variables measured on various scales,
+#' including binary and ordered cateogrical (with varying numbers of categories).
+#' There are also missing values in each variable
+#'
+#'\itemize{
+#'   \item \code{Inc}  Income of the respondent in 1000s of dollars, binned into 21 ordered categories.
+#'   \item \code{DEG}   Highest degree ever obtained (none, HS, Associates, Bachelors, or Graduate)
+#'   \item \code{CHILD}  Number of children ever had.
+#'   \item \code{PINC}  Financial status of respondent's parents when respondent was 16 (on a 5-point scale).
+#'   \item \code{PDEG}  Maximum of mother's and father's highest degree
+#'   \item \code{PCHILD}  Number of siblings of the respondent plus one
+#'   \item \code{AGE} Age of the respondent in years.
+#'}
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @docType data
+#'
+#' @keywords datasets
+#' @name gss
+#'
+#' @usage data("gss")
+#'
+#' @format A data frame containing 1190 observations (n = 1190) and 6 variables (p = 6) measured on the binary scale
+#'         \insertCite{fowlkes1988evaluating}{BGGM}. The variable descriptions were copied from
+#'         \insertCite{@section 4, @hoff2007extending;textual}{BGGM}
+#'
+#' @examples
+#' data("gss")
+NULL

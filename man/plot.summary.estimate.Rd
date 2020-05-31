@@ -2,22 +2,42 @@
 % Please edit documentation in R/estimate.R
 \name{plot.summary.estimate}
 \alias{plot.summary.estimate}
-\title{Plot \code{summary.estimate}}
+\title{Plot \code{summary.estimate} Objects}
 \usage{
-\method{plot}{summary.estimate}(x, color = "black", width = 0, ...)
+\method{plot}{summary.estimate}(x, color = "black", size = 2, width = 0, ...)
 }
 \arguments{
-\item{x}{an object of class \code{summary.estimate}}
+\item{x}{An object of class \code{summary.estimate}}
 
-\item{color}{color of error bar}
+\item{color}{Character string. The color for the error bars.
+(defaults to \code{"black"}).}
 
-\item{width}{width of error bar cap}
+\item{size}{Numeric. The size for the points (defaults to \code{2}).}
 
-\item{...}{currently ignored}
+\item{width}{Numeric. The width of error bar ends (defaults to \code{0}).}
+
+\item{...}{Currently ignored}
 }
 \value{
-an object of class \code{ggplot}
+A \code{ggplot} object.
 }
 \description{
-Plot \code{summary.estimate}
+Visualize the posterior distributions for each partial correlation.
+}
+\examples{
+\donttest{
+# data
+Y <- ptsd[,1:5]
+
+fit <- estimate(Y, iter = 250,
+                progress = FALSE)
+
+
+plot(summary(fit))
+
+}
+
+}
+\seealso{
+\code{\link{estimate}}
 }

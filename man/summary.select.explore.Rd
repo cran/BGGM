@@ -2,24 +2,38 @@
 % Please edit documentation in R/select.explore.R
 \name{summary.select.explore}
 \alias{summary.select.explore}
-\title{Summary method for \code{select.explore} objects}
+\title{Summary Method for \code{select.explore} Objects}
 \usage{
-\method{summary}{select.explore}(object, hyp = "H1", log = TRUE, summarize = FALSE, ...)
+\method{summary}{select.explore}(object, col_names = TRUE, ...)
 }
 \arguments{
-\item{object}{An object of class \code{select.explore}}
+\item{object}{object of class \code{select.explore}.}
 
-\item{hyp}{hypothesis to summarize (default is the alternative H1)}
+\item{col_names}{Logical.}
 
-\item{log}{log scale for the Bayes factors (default is \code{TRUE})}
-
-\item{summarize}{if \code{TRUE} partial correlations and credible intervals are provided}
-
-\item{...}{currently ignored}
+\item{...}{Currently ignored.}
+}
+\value{
+a data frame including the posterior mean, standard deviation,
+and posterior hypothesis probabilities for each relation.
 }
 \description{
-Summary method for \code{select.explore} objects
+Summary Method for \code{select.explore} Objects
 }
-\seealso{
-\code{\link{select.explore}}
+\examples{
+\donttest{
+#  data
+Y <- bfi[,1:10]
+
+# fit model
+fit <- explore(Y, iter = 250,
+               progress = FALSE)
+
+# edge set
+E <- select(fit,
+            alternative = "exhaustive")
+
+summary(E)
+
+}
 }

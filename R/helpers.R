@@ -1,10 +1,294 @@
 #' @importFrom stats coef cov2cor var dnorm lm
-#' na.omit pnorm quantile rWishart
-#' sd qnorm residuals fitted density
+#' na.omit pnorm quantile rWishart runif dnorm rnorm
+#' sd qnorm residuals fitted density weighted.mean
 #' @importFrom utils combn
-#' @importFrom foreach %dopar% foreach
 #' @importFrom graphics plot
+#' @importFrom Rdpack reprompt
+#' @importFrom MASS ginv
 #' @import ggplot2
+#' @importFrom stats model.matrix terms cor
+
+
+hyp_converter <- function (x) {
+
+  hyp_converted <- x
+
+  extract_numbers <-strsplit(  gsub("[^\\d]+", "",
+                                    hyp_converted, perl = TRUE),
+                               split = "" )[[1]]
+
+  extract_numbers <- extract_numbers[unlist(extract_numbers) >= 1]
+
+  words <- NA
+
+  for (i in 1:length(extract_numbers)) {
+    temp <- noquote(extract_numbers[i])
+    words[i] <- numbers2words(as.numeric(temp))
+    hyp_converted <- sub(temp, numbers2words(as.numeric(temp)),
+                         hyp_converted)
+  }
+
+  list(hyp_converted = hyp_converted, words = words)
+}
+
+
+remove_predictors_helper <- function(Y_groups, formula){
+
+  # number of groups
+  groups <- length(Y_groups)
+
+  # Y groups
+  Y_groups <- lapply(seq_len(groups), function(x)  na.omit(Y_groups[[x]]) )
+
+  model_matrices <- lapply(seq_len(groups) , function(x) {
+    stats::model.matrix(formula, Y_groups[[x]])
+  })
+
+  # model matrix terms
+  mm_terms <- attr(terms(formula), "term.labels")
+
+  if(length(mm_terms) == 0){
+
+    Y_groups <- Y_groups
+
+  } else {
+
+    Y_groups <- lapply(seq_len(groups), function(x){
+
+      # check for factors
+      factor_pred <- which(paste0("as.factor(", colnames(Y_groups[[x]]), ")") %in% mm_terms)
+
+      # check for scaled
+      scale_pred <- which(paste0("scale(", colnames(Y_groups[[x]]), ")") %in% mm_terms)
+
+      # check for non factors
+      cont_pred <- which(colnames(Y_groups[[x]]) %in% mm_terms)
+
+      # remove predictors
+      Y_groups[[x]][,-c(factor_pred, cont_pred, scale_pred)]
+
+    })
+  }
+
+  list(Y_groups = Y_groups, model_matrices = model_matrices)
+
+  }
+
+
+
+binary_latent_helper <- function(x){
+  # obervations
+  n <- nrow(x)
+
+  # variables
+  p <- ncol(x)
+
+  # thresholds
+  thresholds <- c(-Inf, 0, Inf)
+
+  # latent data
+  latent_data <- sapply(1:p, function(z) qnorm(runif(n, min = pnorm(thresholds[x[,z]],
+                                                                    mean = 0,
+                                                                    sd = 1),
+                                                     max = pnorm(thresholds[x[,z]+1],
+                                                                 mean = 0,
+                                                                 sd = 1)),
+                                               mean = 0, sd = 1))
+  # latent data (sd = 1)
+  latent_data <- scale(latent_data)
+
+  # latent data
+  latent_data
+}
+
+
+ordinal_latent_helper <- function(x, thresholds){
+
+  # observations
+  n <- nrow(x)
+
+  # variables
+  p <- ncol(x)
+
+  # mean of thresholds
+  thresholds <- t(sapply(1:p, function(x) colMeans(thresholds[,,x])))
+
+  latent_data <- sapply(1:p, function(z)  qnorm(runif(n, min = pnorm(thresholds[z, x[,z]],
+                                                                     mean = 0,
+                                                                     sd = 1),
+                                                         max = pnorm(thresholds[z, x[,z]+1],
+                                                                     mean = 0,
+                                                                     sd = 1)),
+                                                mean = 0, sd = 1))
+  # latent data
+  latent_data <- scale(latent_data)
+
+  # latent data
+  latent_data
+
+  }
+
+rank_helper <- function(Y){
+
+  # adapted from hoff (2008). See documentation.
+  p <- ncol(Y)
+
+  levels  <- apply(Y, 2, function(x) {match(x, sort(unique(x)))})
+
+  K <-  apply(levels, 2, max, na.rm = TRUE)
+
+  ranks <- apply(Y, 2, rank, ties.method = "max", na.last = "keep")
+
+  n_complete <- apply(!is.na(ranks), 2, sum)
+
+  U <- t(t(ranks)/(n_complete + 1))
+
+  Z <- qnorm(U)
+
+  S <- cov(Z)
+
+  list(K = K,
+       levels = levels,
+       Sigma_start = S,
+       z0_start = Z)
+
+}
+
+
+
+group_hyp_helper <- function(hypothesis, x){
+
+  hyp <- gsub(hyp_converter(convert_hyps(hypothesis = hypothesis, cbind(x)))$hyp_converted,
+              pattern = "_", replacement = "")
+  hyp
+}
+
+
+# convert hypothesis to words
+convert_hyps <- function(hypothesis, Y){
+
+  p <- ncol(Y)
+
+  col_names <- numbers2words(1:p)
+
+  mat_name_num <- sapply(1:p, function(x) paste0(1:p, "--", x, sep = ""))
+
+  mat_name_n2w <- sapply(col_names, function(x) paste(col_names,x, sep = ""))
+
+  mat_name_actual <- sapply(colnames(Y), function(x) paste0(colnames(Y), "--", x, sep = ""))
+
+  n_off_diag <- p *( p - 1)*0.5
+
+  where <- lapply(1:n_off_diag, function(x) grep(mat_name_actual[upper.tri(diag(p))][x], hypothesis ))
+
+  where <- which(where == 1)
+
+  if(any(where)){
+
+    for (i in seq_along(where)) {
+      hypothesis <-  gsub(mat_name_actual[upper.tri(diag(p))][where[i]],
+                     replacement =  mat_name_n2w[upper.tri(diag(p))][where[i]], x = hypothesis )
+    }
+
+  } else if (!any(where)){
+
+    where <- lapply(1:n_off_diag, function(x) grep(mat_name_num[upper.tri(diag(p))][x], hypothesis ))
+    where <- which(where == 1)
+
+
+    for (i in seq_along(where)) {
+      hypothesis <-  gsub(mat_name_num[upper.tri(diag(p))][where[i]],
+                          replacement =  mat_name_n2w[upper.tri(diag(p))][where[i]], x = hypothesis )
+    }
+
+  } else {
+
+    stop("error in edge specification\n
+             Hints:\n
+             1) check that the first is smaller than the second (denoting the upper-triangular elements)-e.g., 1--2 and not 2--1\n
+             2) alternatively, the variable might not exist--e.g., p = 10 but 1--11 (11 > 10)")
+  }
+
+  hypothesis
+
+}
+
+
+
+prior_helper_2 <- function(p, delta , epsilon){
+
+  k <- p
+
+  nu <- 1/epsilon
+
+  parcorMat <- corMat <- ThetaMat <- SigmaMat <- array(0, dim=c(1e4 , k , k))
+
+  for(s in 1:dim(parcorMat)[1]){
+
+    Psi <- rWishart(1,df = nu, Sigma = 1/nu*diag(k))[,,1]
+
+    Sigma <- rWishart(1,df=k-1+delta, Sigma=solve(Psi))[,,1]
+
+    Theta <- solve(Sigma)
+
+    ThetaMat[s,,] <- Theta
+    SigmaMat[s,,] <- Sigma
+
+    parcorMat[s,,] <- -diag(1/sqrt(diag(Theta)))%*%Theta%*%diag(1/sqrt(diag(Theta)))
+
+  }
+  parcorMat
+}
+
+print_summary_explore <- function(x,...){
+  summary(x$dat_results, summarize = TRUE)
+}
+
+
+print_post_pred <- function(x,...){
+  if(length(x) != 2){
+    class(x) <- ""
+    x <- round(x, 3)
+    print(x)
+  } else {
+    cat("'summary = FALSE' not printed. See object contents")
+  }
+}
+
+print_map <- function(x,...){
+  cat("BGGM: Bayesian Gaussian Graphical Models \n")
+  cat("--- \n")
+  cat("Method: Maximum A Posteriori \n")
+  cat("--- \n")
+  print(x$pcor)
+}
+
+
+print_fitted <- function(x,...){
+  if(length(x) == 2){
+
+    cat("'summary = FALSE' not printed. See object contents")
+
+  } else {
+
+    class(x) <- ""
+    x <- round(x, 3)
+    print(x)
+  }
+}
+
+print_predict <- function(x,...){
+  if(length(x) == 2){
+
+    cat("'summary = FALSE' not printed. See object contents")
+
+  } else {
+
+    class(x) <- ""
+    x <- round(x, 3)
+    print(x)
+  }
+}
 
 post_prob <- function(data){
   p1 <- sum(data>0)/length(data)
@@ -14,33 +298,6 @@ post_prob <- function(data){
 }
 
 
-R2_ppc <- function(fit, betas, adj, which_one, sims){
-
-  # data
-  dat <- fit$dat
-
-  # sample size
-  n <- nrow(dat)
-
-  # selected betas
-  beta <- sweep(as.matrix(betas$betas[[which_one]]) , MARGIN=2,
-                adj[which_one,-which_one], `*`)
-
-  # sigmas
-  sigma <- betas$sigmas[[which_one]]
-
-  # posterior predictive
-  ppc <- t(sapply(1:sims, function(s) rnorm(n = n,
-                                            mean = dat[,-which_one] %*% beta[s,],
-                                            sd = sigma[s])))
-  # fitted values
-  pred <- t(sapply(1:sims, function(s) dat[,-which_one] %*% beta[s,]))
-  # r <- rowSums(pred^2)/ rowSums(ppc^2)
-
-  # Bayes R2
-  apply(pred, 1, var) / apply(ppc, 1, var)
-
-}
 
 convert_colnames <- function(hyp, Y){
   names_temp <- unlist(strsplit( strsplit(hyp, " ")[[1]], "--"))
@@ -91,43 +348,33 @@ get_lower_tri<-function(cormat){
 analytic_solve <- function(X){
   # sample size
   n <- nrow(X)
+
+  # variables
   p <- ncol(X)
+
   # centererd mat
   X <- scale(X, scale = T)
-  # scale matrix
+
+  # scatter matrix
   S <- t(X) %*% X
-  inv_mu <-  solve(S + diag(10^-5,  p)) * (n)
-  inv_var <-  (n + p + 1)*(solve(S + diag(10^-5, p) )^2 + tcrossprod(diag(solve(S + diag(10^-5, p)))))
-  inv_cor <- diag( 1 / sqrt((diag(inv_mu)))) %*% inv_mu %*% diag( 1 / sqrt((diag(inv_mu))) )
-  partials <- inv_cor * -1 + diag(2, p)
-  list(inv_mu = inv_mu,
+
+  # degrees of freedom
+  df = p
+
+  # map estimate
+  inv_map <-  solve(S + diag(10^-5,  p)) * (n + df - p - 1)
+
+  # posterior variane
+  inv_var <-  (n + df + 1) * (solve(S + diag(0.1^5, p) )^2 + tcrossprod(diag(solve(S + diag(0.1^5, p)))))
+
+  # inverse correlation matrix
+  inv_cor <- diag( 1 / sqrt((diag(inv_map)))) %*% inv_map %*% diag( 1 / sqrt((diag(inv_map))) )
+
+  pcor_mat <- -(inv_cor - diag(p))
+
+  list(inv_map = inv_map,
        inv_var = inv_var,
-       partial = partials)
-}
-
-# summarize coefficients
-beta_summary <- function(x, node, ci_width, samples){
-
-  # convert inverse to beta
-  x <- inverse_2_beta(x, samples = samples)
-
-  # stop if not the correct class
-  if(class(x) != "inverse_2_beta"){
-    stop("class must be inverse_2_beta")
-  }
-
-  # check ci_width is allowed
-  if(ci_width >= 1 | ci_width <= 0){
-    stop("ci_width must be between 0 and 1")
-  }
-  returned_object <- lapply(node, function(y) summary_beta_helper(node =  y,
-                                                                  x = x,
-                                                                  ci_width))
-  class(returned_object) <- "beta_summary"
-  returned_object$betas <- x$betas[[node]]
-  returned_object$sigma <- x$sigma[[node]]
-  returned_object$call <- match.call()
-  returned_object
+       pcor_mat = pcor_mat)
 }
 
 rope_helper <- function(x, rope){
@@ -186,101 +433,6 @@ beta_helper <- function(x, which_one){
 
 }
 
-inverse_2_beta <- function(fit, samples = 500){
-  fit <- fit[1:6]
-
-  # check number of samples
-  if(samples > fit$iter){
-    stop("Samples used to compute R2 cannot be greater than the number used for fitting the model")
-
-  }
-
-  # get posterior estimate for precision matrix
-  inv <-  fit$posterior_samples[,  grep("cov_inv", colnames(fit$posterior_samples))]
-
-  # seperate estimates by row
-  node_wise_elements <- lapply(split(colnames(inv), 1:fit$p), function(x) inv[,x])
-
-  # convert off-diagonals to betas
-  betas <- lapply(1:fit$p, function(x) node_wise_elements[[x]][-x] *  as.matrix((1/ node_wise_elements[[x]][x]) ) * -1)
-
-  # convert diagonals to residual variance
-  sigmas <- lapply(1:fit$p, function(x) as.matrix((1/ node_wise_elements[[x]][x])))
-
-
-  # betas: select number of posterior samples
-  betas <- lapply(betas, function(x)  x[1:samples,])
-
-  # sigma: select number of posterior samples (sd scale)
-  sigmas <- lapply(sigmas, function(x) sqrt(x[1:samples,]))
-
-
-  # returned object
-  returned_object <- list(betas = betas,
-                          sigmas = sigmas,
-                          p = fit$p,
-                          data = fit$dat)
-
-  # assign class
-  class(returned_object) <- "inverse_2_beta"
-
-  returned_object
-}
-
-summary_beta_helper <- function(x, node, ci_width){
-  # index for row_names
-  row_names <- 1:x$p
-
-  # lower and upper ci
-  low <- (1 - ci_width) / 2
-  up <- 1 - low
-
-  # beta posterior mean
-  beta <- apply(x$betas[[node]], 2, mean)
-
-  # beta poster sd
-  post_sd <- apply(x$betas[[node]], 2, stats::sd)
-
-  # lower and upper of posterior
-  beta_ci <- t(apply(x$betas[[node]], 2, quantile, probs = c(low, up)))
-
-  # sd of the outcome
-  sd_y <- stats::sd(x$data[,node])
-
-  # sd of the predictors
-  sd_x <- apply(x$data[,-node], 2, stats::sd)
-
-  # standardized (std) beta
-  beta_std_temp <- x$betas[[node]] * (sd_x / sd_y)
-
-  # beta std posterior mean
-  beta_std <- apply(beta_std_temp, 2, mean)
-
-  # beta std posterior sd
-  beta_std_post_sd <- apply(beta_std_temp, 2, stats::sd)
-
-  # lower and upper of posterior
-  beta_std_ci <- t(apply(beta_std_temp, 2,  quantile, probs = c(low, up)))
-
-  returned_object <- round(cbind(Node =  row_names[-node],
-                                 beta,
-                                 post_sd,
-                                 beta_ci,
-                                 beta_std,
-                                 post_sd = beta_std_post_sd,
-                                 beta_std_ci),3)
-
-  # remove row names
-  row.names(returned_object ) <- NULL
-
-  # make list for naming purposes
-  returned_object <- list(as.data.frame(returned_object))
-
-  # list elemenet name as the response
-  names(returned_object) <- paste("predicting node", node)
-  returned_object$call <- match.call()
-  returned_object
-}
 
 
 R2_helper <- function(ypred, y, ci_width) {
@@ -377,12 +529,6 @@ contrast_helper <- function(x){
 }
 
 
-axis_ticks_helper <- function(x){
-
-  paste(stringr::str_sub(x, start = 1, end = 3),
-        stringr::str_sub(x, start = 4, end = 5),
-        stringr::str_sub(x, start = 6, end = 8))
-}
 
 
 
@@ -445,9 +591,7 @@ Y_combine <- function(...){
 
   dat_info <- lapply(1:length(dat), function(x) {
     p <- ncol(dat[[x]])
-
     n <- nrow(dat[[x]])
-
     data.frame(p = p, n = n)
   })
 
@@ -476,7 +620,7 @@ exhaustive_helper <- function(BF_null, BF_positive, BF_negative){
   c(BF_null, BF_positive, BF_negative) /  sum(BF_null, BF_positive, BF_negative)
 }
 
-symmteric_mat <- function(x){
+symmetric_mat <- function(x){
   x[lower.tri(x)] <- t(x)[lower.tri(x)]
   x
 }
@@ -486,13 +630,18 @@ colnames_helper <- function(x, col_names){
 }
 
 sampling_helper = function(X,  nu, delta,  n_samples){
+
   X <- as.matrix(X)
+
   # number of variables
   p <- ncol(X)
+
   # number of observations
   n <- nrow(X)
+
   # number of partial correlations
   pcors <- (p * (p - 1)) / 2
+
   # names for the partial correlations
   col_names <- numbers2words(1:p)
 
@@ -511,22 +660,28 @@ sampling_helper = function(X,  nu, delta,  n_samples){
   inv_cov_store <-  array(NA, c(p, p, n_samples))
 
   # initial values
-  Psi <- b_inv <- diag(p)
+  Psi <- b_inv <- sigma_inv <- diag(p)
 
   for(i in 1:n_samples){
+
     # draw from posterior
-    post <- post_helper(S = S, n = n, nu = nu, p = p, delta = delta, Psi = Psi, b_inv = b_inv * 10000)
+    post <- post_helper(S = S, n = n,
+                        nu = nu, p = p,
+                        delta = delta,
+                        Psi = Psi,
+                        sigma_inv = sigma_inv)
     # store partials
     pcor_store_up[i,] <- post$pcors_post_up
     pcor_store_low[i,] <- post$pcors_post_low
     # store the inverse
     inv_cov_store[,,i] <- post$sigma_inv
     # draw from prior and store
-    prior_samps <- prior_helper(nu = nu, delta = delta, p = p)
+    prior_samps <- prior_helper(delta = delta, p = p)
     prior_store_up[i,] <- prior_samps$pcors_prior_up
     prior_store_low[i, ] <- prior_samps$pcors_prior_up
     # Psi
     Psi <- post$Psi
+    sigma_inv <- post$sigma_inv
   }
 
   # transform posterior samples
@@ -556,29 +711,45 @@ sampling_helper = function(X,  nu, delta,  n_samples){
        fisher_z_prior =cbind(fisher_z_prior_up, fisher_z_prior_low))
 }
 
-prior_helper <- function(nu, p, delta){
-  # sample from inverse Wishart
-  inv_wish_prior <- solve(rWishart(1, df =  delta + p - 1, diag(p) * 1000)[,,1], tol = 1e-20)
+prior_helper <- function(p, delta){
 
-  # sample from Wishart
-  sigma_inv_prior <- rWishart(1, df = nu, inv_wish_prior)[,,1]
+  I_p <- diag(p)
 
-  # partical correlation matrix
+  nu <- 1/0.001
+
+  Psi <-  rWishart(1, df = nu, I_p * 0.001)[,,1]
+
+  sigma_inv_prior <- solve(rWishart(1, df = p - 1 + delta, solve(Psi))[,,1])
+
   pcor_mat_prior <- - diag(1/sqrt(diag(sigma_inv_prior)))%*%sigma_inv_prior%*%diag(1/sqrt(diag(sigma_inv_prior)))
+
   pcors_prior_up <- pcor_mat_prior[upper.tri(pcor_mat_prior)]
   pcors_prior_low <- pcor_mat_prior[lower.tri(pcor_mat_prior)]
 
-  list(pcors_prior_up = pcors_prior_up, pcors_prior_low = pcors_prior_low)
+  list(pcors_prior_up = pcors_prior_up,
+       pcors_prior_low = pcors_prior_low)
 }
 
 
 
-post_helper <- function(S, n, nu, p, delta, Psi, b_inv){
-  # precision matrix
-  sigma_inv <- rWishart(1, delta + n - 1, solve(Psi+S,  tol =  1e-20))[,,1]
+post_helper <- function(S, n, nu, p, delta, Psi, b_inv, sigma_inv){
 
+  nu = 1 / 0.001
+  delta = delta
+  B <- diag(p) * 0.001
+  nuMP <- delta + delta - 1
+  deltaMP <- nu - p + 1
+
+  BMP <- solve(B)
+
+  BMPinv <- solve(BMP)
   # Psi
-  Psi <- rWishart(1, nu + delta + p - 2, solve(sigma_inv + b_inv,  tol  = 1e-20))[,,1]
+  Psi <- rWishart(1, nuMP + deltaMP + p - 1, solve(sigma_inv + BMPinv,  tol  = 1e-20))[,,1]
+
+  # precision matrix
+  sigma_inv <- rWishart(1, (deltaMP + p - 1) + (n - 1), solve(Psi+S,  tol =  1e-20))[,,1]
+
+
 
   # partial correlation matrix
   pcor_mat <- - diag(1/sqrt(diag(sigma_inv)))%*%sigma_inv%*%diag(1/sqrt(diag(sigma_inv)))
@@ -586,34 +757,11 @@ post_helper <- function(S, n, nu, p, delta, Psi, b_inv){
   pcors_post_low = pcor_mat[lower.tri(pcor_mat)]
 
   # returned list
-  list(pcors_post_up = pcors_post_up, pcors_post_low = pcors_post_low, sigma_inv = sigma_inv, Psi = Psi)
+  list(pcors_post_up = pcors_post_up,
+       pcors_post_low = pcors_post_low, sigma_inv = sigma_inv, Psi = Psi)
 }
 
-sampling <- function(X, nu, delta, n_samples = 20000, cores = 4){
-  # register parallel
-  cl <- parallel::makeCluster(cores)
-  doParallel::registerDoParallel(cl)
 
-  # samples for each "chain"
-  samps <- rep(round(n_samples / cores), cores)
-  chains <- cores
-
-  # global variable
-  i <- 1
-
-  # sample from priors and posteriors
-  samples <- foreach::foreach(i = 1:chains,
-                              .export = c("fisher_z", "sampling_helper",
-                                          "numbers2words", "prior_helper", "post_helper")) %dopar% {
-                                                sampling_helper(X = X, nu = nu,
-                                                                delta = delta,
-                                                                n_samples = samps[i])
-                                            }
-  # stop cluster
-  parallel::stopCluster(cl)
-
-  return(samples)
-}
 
 fisher_z <- function(rho){
   .5 * log(( 1 + rho )/ ( 1 - rho ))
@@ -627,6 +775,7 @@ pcor_name_helper <- function(x){
   keep_vars <-  unlist(strsplit(gsub("[^[:alnum:] ]", "", x), " +"))
   keep_vars
 }
+
 
 framer <- function(x){
   pos_comparisons <- unlist(gregexpr("[<>=]", x))
@@ -650,18 +799,23 @@ framer <- function(x){
 
 
 
-create_matrices <- function(framed, varnames){
+create_matrices <- function(framed, varnames) {
+
   k <- length(varnames)
-  if(any(grepl(",", framed$left)) || any(grepl(",", framed$right))){
-    if(nrow(framed) > 1){
-      for(r in 1:(nrow(framed)-1)){
-        if(all.equal(framed$right[r], framed$left[r+1])){
-          if(substring(framed$right[r], 1, 1) == "(") {
+
+  if (any(grepl(",", framed$left)) ||
+      any(grepl(",", framed$right))) {
+    if (nrow(framed) > 1) {
+      for (r in 1:(nrow(framed) - 1)) {
+        if (all.equal(framed$right[r], framed$left[r + 1])) {
+          if (substring(framed$right[r], 1, 1) == "(") {
             framed$right[r] <- sub("),.+", ")", framed$right[r])
-            framed$left[r+1] <- sub(".+),", "", framed$left[r +1])
+            framed$left[r + 1] <- sub(".+),", "", framed$left[r + 1])
+
           } else{
             framed$right[r] <- sub(",.+", "", framed$right[r])
-            framed$left[r+1] <- sub("[^,]+,", "", framed$left[r+1])
+            framed$left[r + 1] <-
+              sub("[^,]+,", "", framed$left[r + 1])
           }
         }
       }
@@ -669,163 +823,186 @@ create_matrices <- function(framed, varnames){
 
     commas_left <- framed$left[grep(",", framed$left)]
     commas_right <- framed$right[grep(",", framed$right)]
-    if(isTRUE(any(!grepl("\\(.+)", commas_left))) || isTRUE(any(!grepl("\\(.+)", commas_right))) ||
-       isTRUE(any(grepl(").+", commas_left))) || isTRUE(any(grepl(").+", commas_right))) ||
-       isTRUE(any(grepl(".+\\(", commas_left))) || isTRUE(any(grepl(".+\\(", commas_right)))) {
+    if (isTRUE(any(!grepl("\\(.+)", commas_left))) ||
+        isTRUE(any(!grepl("\\(.+)", commas_right))) ||
+        isTRUE(any(grepl(").+", commas_left))) ||
+        isTRUE(any(grepl(").+", commas_right))) ||
+        isTRUE(any(grepl(".+\\(", commas_left))) ||
+        isTRUE(any(grepl(".+\\(", commas_right)))) {
       stop("Incorrect hypothesis syntax or extra character, check specification")
     }
 
     framed$left <- gsub("[()]", "", framed$left)
     framed$right <- gsub("[()]", "", framed$right)
-    commas <- unique(c(grep(",", framed$left), grep(",", framed$right)))
+    commas <-
+      unique(c(grep(",", framed$left), grep(",", framed$right)))
 
-    if(length(commas) > 0){
+    if (length(commas) > 0) {
       multiples <- vector("list", length = length(commas))
 
-      for(r in seq_along(commas)){
-        several <- framed[commas,][r, ]
+      for (r in seq_along(commas)) {
+        several <- framed[commas, ][r,]
 
-        if(several$comp == "="){
-
+        if (several$comp == "=") {
           several <- c(several$left, several$right)
           separate <- unlist(strsplit(several, split = ","))
-          if(any(grepl("^$", several))) stop("Misplaced comma in hypothesis")
+          if (any(grepl("^$", several)))
+            stop("Misplaced comma in hypothesis")
           converted_equality <- paste(separate, collapse = "=")
           multiples[[r]] <- framer(converted_equality)
 
         } else{
           leftvars <- unlist(strsplit(several$left, split = ","))
           rightvars <- unlist(strsplit(several$right, split = ","))
-          if(any(grepl("^$", leftvars)) || any(grepl("^$", rightvars))) stop("Misplaced comma in hypothesis")
+          if (any(grepl("^$", leftvars)) ||
+              any(grepl("^$", rightvars)))
+            stop("Misplaced comma in hypothesis")
 
-          left <- rep(leftvars, length.out = length(rightvars)*length(leftvars))
+          left <-
+            rep(leftvars, length.out = length(rightvars) * length(leftvars))
           right <- rep(rightvars, each = length(leftvars))
           comp <- rep(several$comp, length(left))
 
-          multiples[[r]] <- data.frame(left = left, comp = comp, right = right, stringsAsFactors = FALSE)
+          multiples[[r]] <-
+            data.frame(
+              left = left,
+              comp = comp,
+              right = right,
+              stringsAsFactors = FALSE
+            )
         }
       }
 
-      framed <- framed[-commas,]
+      framed <- framed[-commas, ]
       multiples <- do.call(rbind, multiples)
       framed <- rbind(multiples, framed)
     }
   }
 
-  equality <- framed[framed$comp == "=",]
-  inequality <- framed[!framed$comp == "=",]
+  equality <- framed[framed$comp == "=", ]
+  inequality <- framed[!framed$comp == "=", ]
 
   #****Equality part string-to-matrix
-  if(nrow(equality) == 0) {
+  if (nrow(equality) == 0) {
     R_e <- r_e <- NULL
   } else{
-    outcomes <- suppressWarnings(apply(equality[, -2], 2, as.numeric))
+    outcomes <- suppressWarnings(apply(equality[,-2], 2, as.numeric))
     outcomes <- matrix(outcomes, ncol = 2, byrow = FALSE)
-    if(any(rowSums(is.na(outcomes)) == 0)) stop("Value compared with value rather than variable, e.g., '2 = 2', check hypotheses")
+    if (any(rowSums(is.na(outcomes)) == 0))
+      stop("Value compared with value rather than variable, e.g., '2 = 2', check hypotheses")
     rows <- which(rowSums(is.na(outcomes)) < 2)
-    specified <- t(outcomes[rows,])
+    specified <- t(outcomes[rows, ])
     specified <- specified[!is.na(specified)]
     r_e <- ifelse(rowSums(is.na(outcomes)) == 2, 0, specified)
     r_e <- matrix(r_e)
 
-    var_locations <- apply(equality[, -2], 2, function(x) ifelse(x %in% varnames, match(x, varnames), 0))
+    var_locations <-
+      apply(equality[,-2], 2, function(x)
+        ifelse(x %in% varnames, match(x, varnames), 0))
     var_locations <- matrix(var_locations, ncol = 2)
 
-    R_e <- matrix(rep(0, nrow(equality)*length(varnames)), ncol = length(varnames))
+    R_e <-
+      matrix(rep(0, nrow(equality) * length(varnames)), ncol = length(varnames))
 
-    for(i in seq_along(r_e)){
-      if(!all(var_locations[i, ] > 0)){
-        R_e[i, var_locations[i,]] <- 1
+    for (i in seq_along(r_e)) {
+      if (!all(var_locations[i,] > 0)) {
+        R_e[i, var_locations[i, ]] <- 1
       } else{
-        R_e[i, var_locations[i,]] <- c(1, -1)
+        R_e[i, var_locations[i, ]] <- c(1,-1)
       }
     }
   }
 
 
   #****Inequality part string-to-matrix
-  if(nrow(inequality) == 0) {
+  if (nrow(inequality) == 0) {
     R_i <- r_i <- NULL
   } else{
-    outcomes <- suppressWarnings(apply(inequality[, -2], 2, as.numeric))
+    outcomes <- suppressWarnings(apply(inequality[,-2], 2, as.numeric))
     outcomes <- matrix(outcomes, ncol = 2, byrow = FALSE)
-    if(any(rowSums(is.na(outcomes)) == 0)) stop("Value compared with value rather than variable, e.g., '2 > 2', check hypotheses")
+    if (any(rowSums(is.na(outcomes)) == 0))
+      stop("Value compared with value rather than variable, e.g., '2 > 2', check hypotheses")
     cols <- which(rowSums(is.na(outcomes)) < 2)
-    specified <- t(outcomes[cols,])
+    specified <- t(outcomes[cols, ])
     specified <- specified[!is.na(specified)]
     r_i <- ifelse(rowSums(is.na(outcomes)) == 2, 0, specified)
     r_i <- matrix(r_i)
 
     leq <- which(inequality$comp == "<")
-    var_locations <- apply(inequality[, -2], 2, function(x) ifelse(x %in% varnames, match(x, varnames), 0))
+    var_locations <-
+      apply(inequality[,-2], 2, function(x)
+        ifelse(x %in% varnames, match(x, varnames), 0))
     var_locations <- matrix(var_locations, ncol = 2)
 
-    R_i <- matrix(rep(0, nrow(inequality)*length(varnames)), ncol = length(varnames))
+    R_i <-
+      matrix(rep(0, nrow(inequality) * length(varnames)), ncol = length(varnames))
 
-    for(i in seq_along(r_i)){
-      if(!all(var_locations[i, ] > 0)){
-
-        if(var_locations[i, 1] == 0){
-          if(i %in% leq){
+    for (i in seq_along(r_i)) {
+      if (!all(var_locations[i,] > 0)) {
+        if (var_locations[i, 1] == 0) {
+          if (i %in% leq) {
             value <-  1
           } else{
-            r_i[i] <- r_i[i]*-1
+            r_i[i] <- r_i[i] * -1
             value <- -1
           }
         } else{
-          if(i %in% leq){
-            r_i[i] <- r_i[i]*-1
+          if (i %in% leq) {
+            r_i[i] <- r_i[i] * -1
             value <-  -1
           } else{
             value <- 1
           }
         }
 
-        R_i[i, var_locations[i,]] <- value
+        R_i[i, var_locations[i, ]] <- value
 
       } else{
-        value <- if(i %in% leq) c(-1, 1) else c(1, -1)
-        R_i[i, var_locations[i,]] <- value
+        value <- if (i %in% leq)
+          c(-1, 1)
+        else
+          c(1,-1)
+        R_i[i, var_locations[i, ]] <- value
       }
     }
   }
 
   #3)check comparisons----------------
-  if(is.null(R_i)){
+  if (is.null(R_i)) {
     comparisons <- "only equality"
-  } else if(is.null(R_e)){
+  } else if (is.null(R_e)) {
     comparisons <- "only inequality"
   } else{
     comparisons <- "both comparisons"
   }
 
   #set prior mean
-  R_ei <- rbind(R_e,R_i)
-  r_ei <- rbind(r_e,r_i)
-  Rr_ei <- cbind(R_ei,r_ei)
-  beta_zero <- MASS::ginv(R_ei)%*%r_ei
+  R_ei <- rbind(R_e, R_i)
+  r_ei <- rbind(r_e, r_i)
+  Rr_ei <- cbind(R_ei, r_ei)
+  # beta_zero <- MASS::ginv(R_ei) %*% r_ei
 
-  if(nrow(Rr_ei) > 1){
-    rref_ei <- pracma::rref(Rr_ei)
-    nonzero <- rref_ei[,k+1]!=0
-    if(max(nonzero)>0){
-      row1 <- max(which(nonzero==T))
-      if(sum(abs(rref_ei[row1,1:k]))==0){
+  if (nrow(Rr_ei) > 1) {
+    # rref_ei <- pracma::rref(Rr_ei)
+    nonzero <- rref_ei[, k + 1] != 0
+    if (max(nonzero) > 0) {
+      row1 <- max(which(nonzero == T))
+      if (sum(abs(rref_ei[row1, 1:k])) == 0) {
         stop("Default prior mean cannot be constructed from constraints.")
       }
     }
   }
-
-
-  list(R_i = R_i,
-       r_i = r_i,
-       R_e = R_e,
-       r_e = r_e,
-       R_ei = R_ei,
-       Rr_ei = Rr_ei,
-       r_ei = r_ei,
-       beta_zero = beta_zero,
-       comparisons = comparisons)
+  # beta_zero = beta_zero,
+list(
+    R_i = R_i,
+    r_i = r_i,
+    R_e = R_e,
+    r_e = r_e,
+    R_ei = R_ei,
+    Rr_ei = Rr_ei,
+    r_ei = r_ei,
+    comparisons = comparisons
+  )
 
 }
 
@@ -878,6 +1055,9 @@ word2num <- function(word){
   return(list(word,out))
 }
 
+
+
+
 numbers2words <- function(x){
   ## Function by John Fox found here:
   ## http://tolstoy.newcastle.edu.au/R/help/05/04/2715.html
@@ -929,55 +1109,48 @@ numbers2words <- function(x){
   helper(x)
 }
 
+
+# make names for inverse
 samps_inv_helper <- function(x, p){
-  inv <- paste("cov_inv", paste(paste("[", paste( 1:p, x, sep = ","), sep = ""), "]", sep = ""), sep = "")
+  inv <- paste("cov_inv", paste(paste("[", paste( 1:p, x, sep = ","),
+                                      sep = ""), "]", sep = ""), sep = "")
   inv
 }
 
+# make names for partials
 samps_pcor_helper <- function(x, p){
 
-  pcors <- paste("pcors", paste(paste("[", paste( 1:p, x, sep = ","), sep = ""), "]", sep = ""), sep = "")
+  pcors <- paste("pcors", paste(paste("[", paste( 1:p, x, sep = ","),
+                                      sep = ""), "]", sep = ""), sep = "")
   pcors
 }
 
-hyp_converter <- function(x){
-
-  hyp_converted <- x
-
-  extract_numbers <- unlist(stringr::str_extract_all(hyp_converted, "\\d+"))
-
-  extract_numbers <- extract_numbers[unlist(extract_numbers) != 0 ]
-  words <- NA
-  for(i in 1:length(extract_numbers)){
-
-    temp <- noquote(extract_numbers[i])
-    words[i] <- numbers2words(as.numeric(temp))
-    hyp_converted <- sub(temp, numbers2words(as.numeric(temp)), hyp_converted)
 
 
-  }
 
-  hyp_converted <- stringr::str_remove_all(hyp_converted, "--")
-
-  list(hyp_converted = hyp_converted, words = words)
-}
 
 performance <- function(Estimate, True){
 
   True <- as.matrix(True)
+
   Estimate <- as.matrix(Estimate)
 
   # True Negative
   TN <- ifelse(True[upper.tri(True)] == 0 & Estimate[upper.tri(Estimate)] == 0, 1, 0); TN <- sum(TN)
+
   # False Positive
   FP <- ifelse(True[upper.tri(True)] == 0 & Estimate[upper.tri(Estimate)] != 0, 1, 0); FP <- sum(FP)
+
   # True Positive
   TP <- ifelse(True[upper.tri(True)] != 0 & Estimate[upper.tri(Estimate)] != 0, 1, 0); TP <- sum(TP)
+
   # False Negatives
   FN <- ifelse(True[upper.tri(True)] != 0 & Estimate[upper.tri(Estimate)] == 0, 1, 0); FN <- sum(FN)
 
   Specificity <- TN/(TN + FP)
+
   Sensitivity <- TP/(TP + FN)
+
   Precision <- TP/(TP + FP)
 
   Recall <- TP / (TP + FN)
@@ -986,13 +1159,63 @@ performance <- function(Estimate, True){
 
   MCC <- (TP*TN - FP*FN)/sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
 
-  results <- c(Specificity, Sensitivity, Precision, Recall,  F1_score, MCC)
-  results_name <- c("Specificity", "Sensitivity", "Precision", "Recall",  "F1_score", "MCC")
+  results <- c(Specificity,
+               Sensitivity,
+               Precision,
+               Recall,
+               F1_score,
+               MCC)
+
+  results_name <- c("Specificity",
+                    "Sensitivity",
+                    "Precision",
+                    "Recall",
+                    "F1_score",
+                    "MCC")
+
   results <- cbind.data.frame(measure = results_name, score = results)
   list(results = results)
 
 
 }
+
+################
+# taken and modified from the package orddata
+# under the GPL-2 licence
+rmvord_naiv <-  function(n, probs, Cors, empirical) {
+
+  q = length(probs)
+  categ_probs = 0
+  cumul_probs = list(0)
+  quant_probs = list(0)
+  means = 0
+  vars = 0
+
+  var.wt = function(x, w) {
+    m = weighted.mean(x = x, w = w)
+    sum((x[1:length(x)] - m)^2 * w[1:length(x)])
+  }
+
+  for (i in 1:q) {
+    categ_probs[i] = length(probs[[i]])
+    cumul_probs[[i]] = cumsum(1:categ_probs[i]/10^12 + probs[[i]])
+    cumul_probs[[i]][categ_probs[i]] = 1
+    quant_probs[[i]] = qnorm(p = cumul_probs[[i]], mean = 0,
+                             sd = 1)
+  }
+
+  retval = MASS::mvrnorm(n = n, mu = rep(0,q),
+                         Sigma = Cors,
+                         empirical = empirical)
+
+  for (i in 1:q) {
+    retval[, i] = cut(x = retval[, i], breaks = c(-1/0, quant_probs[[i]]),
+                      right = FALSE)
+  }
+  retval
+}
+
+
 
 csws_labels <- ifelse(1:35 %in% c(7,10,16,24,29),
                       "Family Support",
@@ -1053,4 +1276,56 @@ globalVariables(c('Y1','Y2',
                   'density', 'Node',
                   'Post.mean',
                   'L1', 'lag', 'acf',
-                  'iteration'))
+                  'iteration',
+                  '.imp',
+                  'estimate',
+                  'rref_ei', 'explore',
+                  'print_coef',
+                  'print_confirm',
+                  'print_estimate',
+                  'print_explore',
+                  'print_ggm_compare',
+                  'print_ggm_compare_bf',
+                  'print_ggm_compare_ppc',
+                  'print_ggm_confirm',
+                  'print_roll_your_own',
+                  'print_select_explore',
+                  'print_select_ggm_compare_estimate',
+                  'print_summary_coef',
+                  'print_summary_estimate',
+                  'print_summary_ggm_compare_bf',
+                  'print_summary_ggm_estimate_compare',
+                  'print_summary_metric',
+                  'print_summary_select_explore',
+                  '..', 'ppc', 'rope', 'y',
+                  'Relation', 'Pr.H1'))
+
+
+gen_pcors <- function (p = 20, edge_prob = 0.3, lb = 0.05, ub = 0.3) {
+  d <- -1
+  trys <- 0
+  while (d < 0) {
+    trys <- trys + 1
+    effects <- p * (p - 1) * 0.5
+    mat <- matrix(1, p, p)
+    prob_zero <- 1 - edge_prob
+    pool <- c(rep(0, effects * prob_zero), runif(effects *
+                                                   edge_prob, lb, ub))
+    if (length(pool) != effects) {
+      pool <- c(0, pool)
+    }
+    mat[upper.tri(mat)] <- sample(pool, size = effects)
+    pcs <- symmetric_mat(mat)
+    pcs <- -pcs
+    diag(pcs) <- -diag(pcs)
+    d <- det(pcs)
+  }
+  cors <- cov2cor(solve(pcs))
+  inv <- solve(cors)
+  pcors <- cov2cor(inv) * -1
+  diag(pcors) <- 1
+  adj <- ifelse(pcs == 0, 0, 1)
+  returned_object <- list(pcors = pcors, cors = cors, trys = trys,
+                          pcs = pcs, adj = adj)
+  returned_object
+}

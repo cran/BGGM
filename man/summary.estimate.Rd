@@ -4,26 +4,39 @@
 \alias{summary.estimate}
 \title{Summary method for \code{estimate.default} objects}
 \usage{
-\method{summary}{estimate}(object, cred = 0.95, ...)
+\method{summary}{estimate}(object, col_names = TRUE, cred = 0.95, ...)
 }
 \arguments{
 \item{object}{An object of class \code{estimate}}
 
-\item{cred}{credible interval width}
+\item{col_names}{Logical. Should the summary include the column names (default is \code{TRUE})?
+Setting to \code{FALSE} includes the column numbers (e.g., \code{1--2}).}
 
-\item{...}{currently ignored}
+\item{cred}{Numeric. The credible interval width for summarizing the posterior
+distributions (defaults to 0.95; must be between 0 and 1).}
+
+\item{...}{Currently ignored.}
 }
 \value{
-A list containing the summarized posterior distributions
-# data
-Y <- BGGM::bfi[, 1:5]
-# analytic approach (sample by setting analytic = FALSE)
-fit <- estimate(Y, analytic = TRUE)
-summary(fit)
+A dataframe containing the summarized posterior distributions.
 }
 \description{
-Summary method for \code{estimate.default} objects
+Summarize the posterior distribution of each partial correlation
+with the posterior mean and standard deviation.
+}
+\examples{
+\donttest{
+# data
+Y <- ptsd[,1:5]
+
+fit <- estimate(Y, iter = 250,
+                progress = FALSE)
+
+summary(fit)
+
+}
+
 }
 \seealso{
-\code{\link{select.estimate}}
+\code{\link{estimate}}
 }

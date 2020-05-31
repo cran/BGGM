@@ -1,119 +1,380 @@
-#' Precision Matrix to Multiple Regression
+#' Compute Regression Parameters for \code{estimate} Objects
+#'
+#'  There is a direct correspondence between the inverse covariance matrix and
+#'  multiple regression \insertCite{kwan2014regression,Stephens1998}{BGGM}. This readily allows
+#'  for converting the GGM paramters to regression coefficients. All data types are supported.
+#'
+#'
 #' @name coef.estimate
-#' @description There is a direct correspondence between the covariance matrix and multiple regression. In the case of GGMs, it is possible
-#' to estimate the edge set with multiple regression (i.e., neighborhood selection). In *BGGM*, the precision matrix is first sampled from, and then
-#' each draws is converted to the corresponding coefficients and error variances. This results in a posterior distribution. This function can be used
-#' to perform Bayesian multiple regression.
 #'
-#' @param object object of class \code{estimate} (analytic = F)
-#' @param node which node to summarize (i.e., the outcome)
-#' @param cred credible interval used in the summary output
-#' @param iter number of samples used in the conversion.
-#' @param ... e.g., \code{digits}
+#' @param object An Object of class \code{estimate}
 #'
-#' @return list of class \code{coef.estimate}:
+#' @param iter Number of iterations (posterior samples; defaults to the number in the object).
 #'
-#' list \code{inv_2_beta}:
+#' @param progress Logical. Should a progress bar be included (defaults to \code{TRUE}) ?
+#'
+#' @param ... Currently ignored.
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @return An object of class \code{coef}, containting two lists.
+#'
+#'
 #' \itemize{
-#'  \item \code{betas} posterior samples for the regression coefficients
-#'  \item \code{sigma} posterior samples for sigma (residual sd)
-#'  \item \code{call} \code{match.call()}
+#'
+#' \item \code{betas} A list of length \emph{p}, each containing a \emph{p} - 1 by \code{iter} matrix of
+#' posterior samples
+#'
+#' \item \code{object} An object of class \code{estimate} (the fitted model).
 #' }
-#'
-#' data frame \code{summary_inv_2_beta}:
-#' \itemize{
-#' \item summary of regression coefficients
-#' }
-#'
-#'
-#' \code{call} \code{match.call()}
 #'
 #' @examples
-#' # p = 10
-#' Y <- BGGM::bfi[,1:10]
+#' \donttest{
+#' # note: iter = 250 for demonstrative purposes
 #'
-#' # sample posterior
-#' fit <- estimate(Y, iter = 5000)
+#' #########################
+#' ### example 1: binary ###
+#' #########################
+#' # data
+#' Y <- women_math[1:500, ]
 #'
-#' # precision to regression
-#' coefficients(fit, node = 1, cred = 0.95)
+#' # fit model
+#' fit <- estimate(Y, type = "binary",
+#'                 iter = 250,
+#'                 progress = FALSE)
+#'
+#' # summarize the partial correlations
+#' reg <- coef(fit, progress = FALSE)
+#'
+#' # summary
+#' summ <- summary(reg)
+#'
+#' summ
+#'}
 #' @export
-coef.estimate <- function(object, node = 1, cred = 0.95, iter = 500, ...){
+coef.estimate <- function(object,
+                          iter = NULL,
+                          progress = TRUE,...) {
 
-  # check for samples
-  if(isTRUE(object$analytic)) stop("posterior samples are required (analytic = F)")
+  # check for object class
+  if(is(object, "estimate") | is(object, "explore")){
 
-  # inverse to beta
-  inv_2_beta <- beta_summary(object, node = node,
-                             ci_width = cred, samples = iter)
+    # check for default
+    if(!is(object, "default")){
 
-  # summary regression coefficients
-  summary_inv_2_beta <- inv_2_beta[[1]][[1]][,1:5]
+      stop(paste0("\nclass not supported. must be an object\n",
+                  "from either the 'explore' or 'estimate' functions"))
+    }
 
-  returned_object <- list(inv_2_beta = inv_2_beta,
-                          summary_inv_2_beta = summary_inv_2_beta,
-                          call = match.call(), data = object$dat,
-                          iter = iter, node = node, cred = cred)
-  class(returned_object) <- "coef.estimate"
+    # nodes
+    p <- object$p
+
+    # all posterior samples
+    if(is.null(iter)){
+
+      iter <- object$iter
+
+    }
+
+    # pcor to cor
+    cors <- pcor_to_cor(object, iter = iter)$R
+
+    # betas
+
+    if(isTRUE(progress)){
+      pb <- utils::txtProgressBar(min = 0, max = p, style = 3)
+    }
+
+    betas <- lapply(1:p, function(x) {
+
+    beta_p <- .Call("_BGGM_beta_helper_fast",
+                    XX = cors[-x, -x,],
+                    Xy = cors[x, -x,],
+                    p = p - 1,
+                    iter = iter
+                    )$coefs
+
+    if(isTRUE(progress)){
+      utils::setTxtProgressBar(pb, x)
+      }
+
+    beta_p
+
+    })
+
+  } else {
+
+    stop("class not currently supported")
+
+  }
+
+  # remove samples so
+  # object does not become huge
+  object$post_samp <- 0
+
+  returned_object <- list(betas = betas, object = object)
+  class(returned_object) <- c("BGGM", "coef")
   returned_object
 }
 
-#' @name print.coef.estimate
-#' @title  Print method for \code{coef.estimate} objects
-#' @param x An object of class \code{coef.estimate}
-#' @param ... currently ignored
+
+
+#' Compute Regression Parameters for \code{explore} Objects
 #'
-#' @seealso  \code{\link{coef.estimate}}
+#'  There is a direct correspondence between the inverse covariance matrix and
+#'  multiple regression \insertCite{kwan2014regression,Stephens1998}{BGGM}. This readily allows
+#'  for converting the GGM paramters to regression coefficients. All data types are supported.
+#'
+#' @name coef.explore
+#'
+#' @param object An Object of class \code{explore}.
+#'
+#' @param iter Number of iterations (posterior samples; defaults to the number in the object).
+#'
+#' @param progress Logical. Should a progress bar be included (defaults to \code{TRUE}) ?
+#'
+#' @param ... Currently ignored.
+#'
+#' @references
+#' \insertAllCited{}
+#'
+#' @return An object of class \code{coef}, containting two lists.
+#'
+#' \itemize{
+#'
+#' \item \code{betas} A list of length \emph{p}, each containing a \emph{p} - 1 by \code{iter} matrix of
+#' posterior samples
+#'
+#' \item \code{object} An object of class \code{explore} (the fitted model).
+#' }
+#'
+#' @examples
+#' \donttest{
+#' # note: iter = 250 for demonstrative purposes
+#'
+#' # data
+#' Y <- ptsd[,1:4]
+#'
+#' ##########################
+#' ### example 1: ordinal ###
+#' ##########################
+#'
+#' # fit model (note + 1, due to zeros)
+#' fit <- explore(Y + 1,
+#'                type = "ordinal",
+#'                iter = 250,
+#'                progress = FALSE)
+#'
+#' # summarize the partial correlations
+#' reg <- coef(fit, progress = FALSE)
+#'
+#' # summary
+#' summ <- summary(reg)
+#'
+#' summ
+#'}
+#' @export
+coef.explore <- function(object,
+                         iter = NULL,
+                         progress = TRUE, ...) {
+
+  # check for object class
+  if(is(object, "estimate") | is(object, "explore")){
+
+    # check for default
+    if(!is(object, "default")){
+
+      stop(paste0("\nclass not supported. must be an object\n",
+                  "from either the 'explore' or 'estimate' functions"))
+    }
+
+    # nodes
+    p <- object$p
+
+    # all posterior samples
+    if(is.null(iter)){
+
+      iter <- object$iter
+
+    }
+
+    # pcor to cor
+    cors <- pcor_to_cor(object, iter = iter)$R
+
+    if(isTRUE(progress)){
+      pb <- utils::txtProgressBar(min = 0, max = p, style = 3)
+    }
+
+    betas <- lapply(1:p, function(x) {
+
+      beta_p <- .Call("_BGGM_beta_helper_fast",
+                      XX = cors[-x, -x,],
+                      Xy = cors[x, -x,],
+                      p = p - 1,
+                      iter = iter
+      )$coefs
+
+      if(isTRUE(progress)){
+        utils::setTxtProgressBar(pb, x)
+        }
+
+      beta_p
+
+    })
+
+  } else {
+
+    stop("class not currently supported")
+
+  }
+
+  # remove samples so
+  # object does not become huge
+  object$post_samp <- 0
+
+  returned_object <- list(betas = betas,
+                          object = object)
+
+  class(returned_object) <- c("BGGM", "coef")
+  returned_object
+}
+
+
+
+print_coef <- function(x,...){
+  # nodes
+  p <- length(x$betas)
+  # column names
+  cn <- colnames(x$object$Y)
+
+  cat("BGGM: Bayesian Gaussian Graphical Models \n")
+  cat("--- \n")
+  cat("Type:", x$object$type, "\n")
+  cat("Formula:", paste(as.character(x$object$formula), collapse = " "), "\n")
+  cat("--- \n")
+  cat("Call: \n")
+  print(x$object$call)
+  cat("--- \n")
+  cat("Coefficients: \n \n")
+
+  if(is.null(cn)){
+    cn <- 1:p
+
+  }
+
+  for (i in seq_len(p)) {
+    # print outcome
+    cat(paste0(cn[i], ": \n"))
+
+    # coefs for node i
+    coef_i <- data.frame(t(round(colMeans(x$betas[[i]]), 3)))
+
+    # predictor names
+    colnames(coef_i) <- cn[-i]
+
+    # print coefs
+    print(coef_i, row.names = FALSE)
+    cat("\n")
+  }
+}
+
+
+
+#' Summarize \code{coef} Objects
+#'
+#' Summarize regression parameters with the posterior mean,
+#' standard deviation, and credible interval.
+#'
+#' @param object An object of class \code{coef}.
+#'
+#' @param cred Numeric. The credible interval width for summarizing the posterior
+#' distributions (defaults to 0.95; must be between 0 and 1).
+#'
+#' @param ... Currently ignored
+#'
+#' @return A list of length \emph{p} including the
+#'         summaries for each multiple regression.
+#'
+#' @note
+#'
+#' See \code{\link{coef.estimate}} and \code{\link{coef.explore}} for examples.
 #'
 #' @export
-print.coef.estimate <- function(x,...){
+summary.coef <- function(object,
+                         cred = 0.95,
+                         ...){
 
-  res_sigma <- x$inv_2_beta$sigma
-
-  lb <- (1 - x$cred) / 2
+  lb <- (1 - cred) / 2
 
   ub <- 1 - lb
 
-  cred_int <- stats::quantile(res_sigma, prob = c(lb, ub))
+  p <- object$object$p
 
-  res_sigma_summ <- data.frame(Estimate = mean(res_sigma),
-                               Est.Error = sd(res_sigma),
-                               t(cred_int))
+  post_mean <- t(sapply(1:p, function(x)  apply(object$betas[[x]], MARGIN = 2, mean )))
 
-  # R2
-  ypred <- t(apply(as.matrix(x$inv_2_beta$betas)[1:x$iter,], 1,
-                   function(z)  z %*% t(as.matrix(x$data[,- x$node]))))
+  post_sd   <- t(sapply(1:p, function(x)  apply(object$betas[[x]], MARGIN = 2, sd)))
 
-  r2 <- R2_helper(ypred, x$data[,x$node], ci_width = x$cred)
-  cred_in <- stats::quantile(r2$R2, prob = c(lb, ub))
+  post_lb   <- t(sapply(1:p, function(x)  apply(object$betas[[x]], MARGIN = 2, quantile, lb)))
 
-  res_r2_summ <- data.frame(Estimate = mean(r2$R2), Est.Error = sd(r2$R2), t(cred_in))
+  post_ub   <- t(sapply(1:p, function(x)  apply(object$betas[[x]], MARGIN = 2, quantile, ub)))
 
-  colnames(res_sigma_summ) <- c("Estimate", "Est.Error", "CrI.lb", "CrI.ub")
+  res_i <- list()
 
-  colnames(res_r2_summ) <- c("Estimate", "Est.Error", "CrI.lb", "CrI.ub")
+  for(i in 1:p){
 
-  colnames(x$summary_inv_2_beta) <- c("Node", "Estimate",
-                                      "Est.Error", "Cred.lb",
-                                      "Cred.ub")
+    res_i[[i]] <- round(data.frame(post_mean = post_mean[i,],
+                                   post_sd = post_sd[i,],
+                                   post_lb = post_lb[i,],
+                                   post_ub  = post_ub[i,]), 3)
+
+  }
+
+
+  returned_object <- list(summaries = res_i,
+                          object = object)
+
+  class(returned_object) <- c("BGGM",
+                              "coef",
+                              "summary.coef")
+  returned_object
+}
+
+
+
+print_summary_coef <- function(x,...){
+
+  # node names
+  cn <- colnames(x$object$object$Y)
+
+  # nodes
+  p <- ncol(x$object$object$Y)
+
+  # check for column names
+  if(is.null(cn)) {
+
+    cn <- 1:p
+
+  }
   cat("BGGM: Bayesian Gaussian Graphical Models \n")
   cat("--- \n")
-  cat("Type: Inverse to Regression \n")
-  cat("Credible Interval:",  gsub("*0.","", formatC( round(x$cred, 4), format='f', digits=2)), "% \n")
-  cat("Node:", x$node, "\n")
+  cat("Type:", x$object$object$type, "\n")
+  cat("Formula:", paste(as.character(x$object$object$formula), collapse = " "), "\n")
   cat("--- \n")
   cat("Call: \n")
-  print(x$call)
+  print(x$object$object$call)
   cat("--- \n")
   cat("Coefficients: \n \n")
-  summary_inv_2_beta <- data.frame(x$summary_inv_2_beta,
-                                   check.names = F)
-  print(summary_inv_2_beta, row.names = FALSE, ...)
-  cat("--- \n")
-  cat("Sigma:\n\n")
-  print(round(res_sigma_summ, 3), row.names = FALSE, ...)
-  cat("--- \n")
-  cat("Bayesian R2:\n\n")
-  print(round(res_r2_summ, 3), row.names = FALSE, ...)
-  cat("--- \n")
+
+  for(i in seq_len(p)){
+    cat(paste0( cn[i], ": \n"))
+    summ_i <- x$summaries[[i]]
+    colnames(summ_i) <- c("Post.mean", "Post.sd", "Cred.lb", "Cred.ub")
+    print( cbind.data.frame(Node = cn[-i], summ_i), row.names = FALSE)
+    cat("\n")
+  }
+
 }
+
+
+

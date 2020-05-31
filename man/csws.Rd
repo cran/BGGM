@@ -3,8 +3,10 @@
 \docType{data}
 \name{csws}
 \alias{csws}
-\title{Contingencies of Self-Worth Scale (CSWS)}
-\format{A data frame with 35 variables and 680 observations (7 point Likert scale)}
+\title{Data: Contingencies of Self-Worth Scale (CSWS)}
+\format{
+A data frame with 35 variables and 680 observations (7 point Likert scale)
+}
 \usage{
 data("csws")
 }
@@ -15,27 +17,27 @@ A dataset containing items from the Contingencies of Self-Worth Scale (CSWS) sca
 \details{
 \itemize{
   \item \code{1} When I think I look attractive, I feel good about myself
-  \item \code{2} My self-worth is based on God’s love
+  \item \code{2} My self-worth is based on God's love
   \item \code{3} I feel worthwhile when I perform better than others on a task or skill.
   \item \code{4} My self-esteem is unrelated to how I feel about the way my body looks.
   \item \code{5} Doing something I know is wrong makes me lose my self-respect
-  \item \code{6} I don’t care if other people have a negative opinion about me.
+  \item \code{6} I don't care if other people have a negative opinion about me.
   \item \code{7} Knowing that my family members love me makes me feel good about myself.
-  \item \code{8} I feel worthwhile when I have God’s love.
-  \item \code{9} I can’t respect myself if others don’t respect me.
+  \item \code{8} I feel worthwhile when I have God's love.
+  \item \code{9} I can’t respect myself if others don't respect me.
   \item \code{10} My self-worth is not influenced by the quality of my relationships with my family members.
   \item \code{11} Whenever I follow my moral principles, my sense of self-respect gets a boost.
   \item \code{12} Knowing that I am better than others on a task raises my self-esteem.
-  \item \code{13} My opinion about myself isn’t tied to how well I do in school.
-  \item \code{14} I couldn’t respect myself if I didn’t live up to a moral code.
-  \item \code{15} I don’t care what other people think of me.
+  \item \code{13} My opinion about myself isn't tied to how well I do in school.
+  \item \code{14} I couldn't respect myself if I didn't live up to a moral code.
+  \item \code{15} I don't care what other people think of me.
   \item \code{16} When my family members are proud of me, my sense of self-worth increases.
   \item \code{17} My self-esteem is influenced by how attractive I think my face or facial features are.
-  \item \code{18} My self-esteem would suffer if I didn’t have God’s love.
+  \item \code{18} My self-esteem would suffer if I didn’t have God's love.
   \item \code{19} Doing well in school gives me a sense of selfrespect.
   \item \code{20} Doing better than others gives me a sense of self-respect.
-  \item \code{21} My sense of self-worth suffers whenever I think I don’t look good.
-  \item \code{22} I feel better about myself when I know I’m doing well academically.
+  \item \code{21} My sense of self-worth suffers whenever I think I don't look good.
+  \item \code{22} I feel better about myself when I know I'm doing well academically.
   \item \code{23} What others think of me has no effect on what I think about myself.
   \item \code{24} When I don’t feel loved by my family, my selfesteem goes down.
   \item \code{25} My self-worth is affected by how well I do when I am competing with others.

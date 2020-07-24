@@ -1,7 +1,7 @@
 Package: BGGM
 Type: Package
 Title: Bayesian Gaussian Graphical Models
-Version: 2.0.1
+Version: 2.0.2
 Date: 2020-07-23
 Authors@R: c(person("Donald", "Williams", email = "drwwilliams@ucdavis.edu", role = c("aut", "cre")),
              person("Joris", "Mulder", email = "J.Mulder3@uvt.nl", role = "aut"))
@@ -18,8 +18,7 @@ License: GPL-2
 Imports: BFpack (>= 0.2.1), GGally (>= 1.4.0), ggplot2 (>= 3.2.1),
         ggridges (>= 0.5.1), grDevices, MASS (>= 7.3-51.5), methods,
         mvnfast (>= 0.2.5), network (>= 1.15), reshape (>= 0.8.8), Rcpp
-        (>= 1.0.4.6), RcppProgress (>= 0.1), Rdpack (>= 0.11-1), sna
-        (>= 2.5), stats, utils,
+        (>= 1.0.4.6), Rdpack (>= 0.11-1), sna (>= 2.5), stats, utils,
 Suggests: abind (>= 1.4-5), assortnet (>= 0.12), networktools (>=
         1.2.3), mice (>= 3.8.0), psych, knitr, rmarkdown
 Encoding: UTF-8
@@ -30,9 +29,9 @@ LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress
 RdMacros: Rdpack
 BugReports: https://github.com/donaldRwilliams/BGGM/issues
 NeedsCompilation: yes
-Packaged: 2020-07-23 19:47:38 UTC; Donny
+Packaged: 2020-07-24 17:23:08 UTC; Donny
 Author: Donald Williams [aut, cre],
   Joris Mulder [aut]
 Maintainer: Donald Williams <drwwilliams@ucdavis.edu>
 Repository: CRAN
-Date/Publication: 2020-07-23 20:32:06 UTC
+Date/Publication: 2020-07-24 19:12:10 UTC

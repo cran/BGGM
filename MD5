@@ -1,4 +1,4 @@
-afe68c6cc9e218aa01b9aab9150090a6 *DESCRIPTION
+4ce652af45e5ccf18c02bf3eb55c1358 *DESCRIPTION
 5413c3fcc06b48711fec02ab466fbf11 *NAMESPACE
 c7b81174dc936f9e72c7da42216df526 *NEWS.md
 1a14bd9a95811a91d956c767acf6fc75 *R/BGGM-package.R
@@ -8,8 +8,8 @@ cc5ec685bbae21a23a81252a4bd68988 *R/coef.estimate.R
 486bd9d23400efdc5139f45e951e82e9 *R/confirm.R
 46e92a7b7d730c8254e2235b05212573 *R/convergence.R
 7c726d8a8b46f3fa7c998d01eba12bf9 *R/datasets.R
-a68d9fd9879a3987c0e2a5792878f97a *R/estimate.R
-398aa65869c5e83ddcaa48c9de1919c4 *R/explore.default.R
+ffc88ba3b02da2ce7a844ee7ece0cff4 *R/estimate.R
+fa9de4b7484b264000812465f75d7699 *R/explore.default.R
 a66d3c706f511eb749d50a13e6e71db6 *R/fisher_r2z.R
 57be8f777c0a6066f08653354685f700 *R/fisher_z2r.R
 c891563eae5a816c086bf7fa704cf60e *R/gen_ordinal.R
@@ -39,7 +39,7 @@ a0e460dc630ec5c6148e745ec0735f79 *R/select.ggm_compare_bf.R
 d7732b81c926ac358b4d8d433b7447e5 *R/var_estimate.R
 81d1cbed2208fd9d54a14ee014982a29 *R/weighted_adj_mat.R
 61cf2de1086ed46b2012d5e66e514186 *R/zero_order.R
-fc7eddc86f92edd28570ff534011a711 *build/partial.rdb
+b96779455128a292519fe838d42e864a *build/partial.rdb
 43741d75c9e75b3e684303459a8c023f *build/vignette.rds
 ea528c1660966c2a0bbd11a28b13affe *cleanup
 f7c34fdfeeea7ccd86ad9816538d61e8 *configure
@@ -87,7 +87,7 @@ afdd9725e686591ecc92a9f28df08469 *inst/doc/netplot.Rmd
 d1fe96a9796db6f1ee30dbfdfd29c491 *inst/doc/netstat_custom.html
 b7e8132f411dbbd5c6c73ba77c0348e4 *inst/doc/ppc_custom.R
 0cb4cd48962c95098ad03af9faaa4420 *inst/doc/ppc_custom.Rmd
-931455f7bc7082aa8ecaf132f26e25e8 *inst/doc/ppc_custom.html
+d74e1d10816b0af3ae82774c23a475a9 *inst/doc/ppc_custom.html
 1d44d921414c6d7f9d347f9ced331cca *inst/doc/predictability.R
 5f4ec2099de6c59859650d180cf6f74f *inst/doc/predictability.Rmd
 855322749420781eb127320e636aea48 *inst/doc/predictability.html
@@ -201,7 +201,7 @@ f83f54cf00ad438233166ff64a19f96b *man/select.ggm_compare_estimate.Rd
 4ae79ecbd280f0f029e9f3ebbdc37975 *src/Makevars.in
 5cf050cacb9a55c7eb9872dcd4fc0530 *src/Makevars.win
 731786b9924841d10722aa78a8e8c14f *src/RcppExports.cpp
-66cb94463b3ef37c7ebcaa03deb5e2ad *src/bggm_fast.cpp
+fb995990b32758239919eb6b086d49bc *src/bggm_fast.cpp
 d5db48e68fb67d0369da75730c796680 *vignettes/control.Rmd
 e8bbc88d1240ff8bcc7880a6ea2e82e4 *vignettes/hyp_3_ways.Rmd
 caa07bf36604581e8138c1319dcebee7 *vignettes/in_tandem.Rmd

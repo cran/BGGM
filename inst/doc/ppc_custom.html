@@ -15,13 +15,77 @@
 
 <title>Custom Network Comparisons</title>
 
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+<style type="text/css">
+a.anchor-section {margin-left: 10px; visibility: hidden; color: inherit;}
+a.anchor-section::before {content: '#';}
+.hasAnchor:hover a.anchor-section {visibility: visible;}
+</style>
+<script>// Anchor sections v1.0 written by Atsushi Yasumoto on Oct 3rd, 2020.
+document.addEventListener('DOMContentLoaded', function() {
+  // Do nothing if AnchorJS is used
+  if (typeof window.anchors === 'object' && anchors.hasOwnProperty('hasAnchorJSLink')) {
+    return;
+  }
+
+  const h = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+  // Do nothing if sections are already anchored
+  if (Array.from(h).some(x => x.classList.contains('hasAnchor'))) {
+    return null;
+  }
+
+  // Use section id when pandoc runs with --section-divs
+  const section_id = function(x) {
+    return ((x.classList.contains('section') || (x.tagName === 'SECTION'))
+            ? x.id : '');
+  };
+
+  // Add anchors
+  h.forEach(function(x) {
+    const id = x.id || section_id(x.parentElement);
+    if (id === '') {
+      return null;
+    }
+    let anchor = document.createElement('a');
+    anchor.href = '#' + id;
+    anchor.classList = ['anchor-section'];
+    x.classList.add('hasAnchor');
+    x.appendChild(anchor);
+  });
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
-a.sourceLine { display: inline-block; line-height: 1.25; }
-a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
-a.sourceLine:empty { height: 1.2em; }
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode { white-space: pre; position: relative; }
 div.sourceCode { margin: 1em 0; }
@@ -31,14 +95,16 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 code.sourceCode { white-space: pre-wrap; }
-a.sourceLine { text-indent: -1em; padding-left: 1em; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-pre.numberSource a.sourceLine
-  { position: relative; left: -4em; }
-pre.numberSource a.sourceLine::before
-  { content: attr(title);
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
     position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; pointer-events: all; display: inline-block;
+    border: none; display: inline-block;
     -webkit-touch-callout: none; -webkit-user-select: none;
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
@@ -47,9 +113,9 @@ pre.numberSource a.sourceLine::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  }
+  {   }
 @media screen {
-a.sourceLine::before { text-decoration: underline; }
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -367,35 +433,35 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>In the following, the focus is on defining custom functions and using them with <code>ggm_compare_ppc</code>. In all examples, post-traumatic stress disorder networks are compared <span class="citation">(Fried et al. 2018)</span>.</p>
 <div id="r-packages" class="section level3">
 <h3>R packages</h3>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="co"># need the developmental version</span></a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="cf">if</span> (<span class="op">!</span><span class="kw">requireNamespace</span>(<span class="st">&quot;remotes&quot;</span>)) { </a>
-<a class="sourceLine" id="cb1-3" title="3">  <span class="kw">install.packages</span>(<span class="st">&quot;remotes&quot;</span>)   </a>
-<a class="sourceLine" id="cb1-4" title="4">}   </a>
-<a class="sourceLine" id="cb1-5" title="5"></a>
-<a class="sourceLine" id="cb1-6" title="6"><span class="co"># install from github</span></a>
-<a class="sourceLine" id="cb1-7" title="7">remotes<span class="op">::</span><span class="kw">install_github</span>(<span class="st">&quot;donaldRwilliams/BGGM&quot;</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># need the developmental version</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="cf">if</span> (<span class="op">!</span><span class="kw">requireNamespace</span>(<span class="st">&quot;remotes&quot;</span>)) { </span>
+<span id="cb1-3"><a href="#cb1-3"></a>  <span class="kw">install.packages</span>(<span class="st">&quot;remotes&quot;</span>)   </span>
+<span id="cb1-4"><a href="#cb1-4"></a>}   </span>
+<span id="cb1-5"><a href="#cb1-5"></a></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="co"># install from github</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>remotes<span class="op">::</span><span class="kw">install_github</span>(<span class="st">&quot;donaldRwilliams/BGGM&quot;</span>)</span></code></pre></div>
 </div>
 <div id="data" class="section level3">
 <h3>Data</h3>
 <p>Only the correlation matrices are available. Hence, multivariate normal data is generated with that <em>exact</em> correlation structure via the <code>R</code> package <strong>MASS</strong>.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1"><span class="co"># need these packages</span></a>
-<a class="sourceLine" id="cb2-2" title="2"><span class="kw">library</span>(BGGM)</a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="kw">library</span>(ggplot2)</a>
-<a class="sourceLine" id="cb2-4" title="4"><span class="kw">library</span>(assortnet)</a>
-<a class="sourceLine" id="cb2-5" title="5"><span class="kw">library</span>(networktools)</a>
-<a class="sourceLine" id="cb2-6" title="6"><span class="kw">library</span>(MASS)</a>
-<a class="sourceLine" id="cb2-7" title="7"></a>
-<a class="sourceLine" id="cb2-8" title="8"><span class="co"># group 1</span></a>
-<a class="sourceLine" id="cb2-9" title="9">Yg1 &lt;-<span class="st"> </span>MASS<span class="op">::</span><span class="kw">mvrnorm</span>(<span class="dt">n =</span> <span class="dv">926</span>, </a>
-<a class="sourceLine" id="cb2-10" title="10">                     <span class="dt">mu =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">16</span>), </a>
-<a class="sourceLine" id="cb2-11" title="11">                     <span class="dt">Sigma =</span> ptsd_cor3, </a>
-<a class="sourceLine" id="cb2-12" title="12">                     <span class="dt">empirical =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb2-13" title="13"></a>
-<a class="sourceLine" id="cb2-14" title="14"><span class="co"># group 2</span></a>
-<a class="sourceLine" id="cb2-15" title="15">Yg2 &lt;-<span class="st"> </span>MASS<span class="op">::</span><span class="kw">mvrnorm</span>(<span class="dt">n =</span> <span class="dv">956</span>, </a>
-<a class="sourceLine" id="cb2-16" title="16">                     <span class="dt">mu =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">16</span>), </a>
-<a class="sourceLine" id="cb2-17" title="17">                     <span class="dt">Sigma =</span> ptsd_cor4, </a>
-<a class="sourceLine" id="cb2-18" title="18">                     <span class="dt">empirical =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># need these packages</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">library</span>(BGGM)</span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">library</span>(ggplot2)</span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="kw">library</span>(assortnet)</span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">library</span>(networktools)</span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="kw">library</span>(MASS)</span>
+<span id="cb2-7"><a href="#cb2-7"></a></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="co"># group 1</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a>Yg1 &lt;-<span class="st"> </span>MASS<span class="op">::</span><span class="kw">mvrnorm</span>(<span class="dt">n =</span> <span class="dv">926</span>, </span>
+<span id="cb2-10"><a href="#cb2-10"></a>                     <span class="dt">mu =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">16</span>), </span>
+<span id="cb2-11"><a href="#cb2-11"></a>                     <span class="dt">Sigma =</span> ptsd_cor3, </span>
+<span id="cb2-12"><a href="#cb2-12"></a>                     <span class="dt">empirical =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb2-13"><a href="#cb2-13"></a></span>
+<span id="cb2-14"><a href="#cb2-14"></a><span class="co"># group 2</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a>Yg2 &lt;-<span class="st"> </span>MASS<span class="op">::</span><span class="kw">mvrnorm</span>(<span class="dt">n =</span> <span class="dv">956</span>, </span>
+<span id="cb2-16"><a href="#cb2-16"></a>                     <span class="dt">mu =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">16</span>), </span>
+<span id="cb2-17"><a href="#cb2-17"></a>                     <span class="dt">Sigma =</span> ptsd_cor4, </span>
+<span id="cb2-18"><a href="#cb2-18"></a>                     <span class="dt">empirical =</span> <span class="ot">TRUE</span>)</span></code></pre></div>
 </div>
 </div>
 <div id="illustrative-examples" class="section level1">
@@ -406,48 +472,48 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div id="step-1-define-custom-function" class="section level3">
 <h3>Step 1: Define Custom Function</h3>
 <p>The first step is to define a custom function that takes two data matrices and the output is the chosen test-statistic (in this case a correlation)</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</a>
-<a class="sourceLine" id="cb3-2" title="2">  <span class="co"># number of nodes</span></a>
-<a class="sourceLine" id="cb3-3" title="3">  p &lt;-<span class="st"> </span><span class="kw">ncol</span>(Yg1)</a>
-<a class="sourceLine" id="cb3-4" title="4">  </a>
-<a class="sourceLine" id="cb3-5" title="5">  <span class="co"># index of off-diagonal</span></a>
-<a class="sourceLine" id="cb3-6" title="6">  indices &lt;-<span class="st"> </span><span class="kw">upper.tri</span>( <span class="kw">diag</span>(p))</a>
-<a class="sourceLine" id="cb3-7" title="7">  </a>
-<a class="sourceLine" id="cb3-8" title="8">  <span class="co"># group 1:</span></a>
-<a class="sourceLine" id="cb3-9" title="9">  <span class="co"># fit model</span></a>
-<a class="sourceLine" id="cb3-10" title="10">  g1_fit &lt;-<span class="st"> </span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb3-11" title="11">  <span class="co"># pcors</span></a>
-<a class="sourceLine" id="cb3-12" title="12">  g1_pcors &lt;-<span class="st"> </span><span class="kw">pcor_mat</span>(g1_fit)[indices]</a>
-<a class="sourceLine" id="cb3-13" title="13">  </a>
-<a class="sourceLine" id="cb3-14" title="14">  <span class="co"># group 2</span></a>
-<a class="sourceLine" id="cb3-15" title="15">  <span class="co"># fit model</span></a>
-<a class="sourceLine" id="cb3-16" title="16">  g2_fit &lt;-<span class="st"> </span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb3-17" title="17">  <span class="co"># pcors</span></a>
-<a class="sourceLine" id="cb3-18" title="18">  g2_pcors &lt;-<span class="st"> </span><span class="kw">pcor_mat</span>(g2_fit)[indices]</a>
-<a class="sourceLine" id="cb3-19" title="19">  </a>
-<a class="sourceLine" id="cb3-20" title="20">  <span class="co"># test-statistic</span></a>
-<a class="sourceLine" id="cb3-21" title="21">  <span class="kw">cor</span>(g1_pcors, g2_pcors)</a>
-<a class="sourceLine" id="cb3-22" title="22">  }</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</span>
+<span id="cb3-2"><a href="#cb3-2"></a>  <span class="co"># number of nodes</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a>  p &lt;-<span class="st"> </span><span class="kw">ncol</span>(Yg1)</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  </span>
+<span id="cb3-5"><a href="#cb3-5"></a>  <span class="co"># index of off-diagonal</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a>  indices &lt;-<span class="st"> </span><span class="kw">upper.tri</span>( <span class="kw">diag</span>(p))</span>
+<span id="cb3-7"><a href="#cb3-7"></a>  </span>
+<span id="cb3-8"><a href="#cb3-8"></a>  <span class="co"># group 1:</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a>  <span class="co"># fit model</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a>  g1_fit &lt;-<span class="st"> </span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb3-11"><a href="#cb3-11"></a>  <span class="co"># pcors</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a>  g1_pcors &lt;-<span class="st"> </span><span class="kw">pcor_mat</span>(g1_fit)[indices]</span>
+<span id="cb3-13"><a href="#cb3-13"></a>  </span>
+<span id="cb3-14"><a href="#cb3-14"></a>  <span class="co"># group 2</span></span>
+<span id="cb3-15"><a href="#cb3-15"></a>  <span class="co"># fit model</span></span>
+<span id="cb3-16"><a href="#cb3-16"></a>  g2_fit &lt;-<span class="st"> </span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb3-17"><a href="#cb3-17"></a>  <span class="co"># pcors</span></span>
+<span id="cb3-18"><a href="#cb3-18"></a>  g2_pcors &lt;-<span class="st"> </span><span class="kw">pcor_mat</span>(g2_fit)[indices]</span>
+<span id="cb3-19"><a href="#cb3-19"></a>  </span>
+<span id="cb3-20"><a href="#cb3-20"></a>  <span class="co"># test-statistic</span></span>
+<span id="cb3-21"><a href="#cb3-21"></a>  <span class="kw">cor</span>(g1_pcors, g2_pcors)</span>
+<span id="cb3-22"><a href="#cb3-22"></a>  }</span></code></pre></div>
 </div>
 <div id="step-2-compute-the-observed-score" class="section level3">
 <h3>Step 2: Compute the Observed Score</h3>
 <p>The next step is to compute the observed test-statistic, that is, the correlation between the partial correlations.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</a>
-<a class="sourceLine" id="cb4-2" title="2"></a>
-<a class="sourceLine" id="cb4-3" title="3"><span class="co"># observed</span></a>
-<a class="sourceLine" id="cb4-4" title="4">obs</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</span>
+<span id="cb4-2"><a href="#cb4-2"></a></span>
+<span id="cb4-3"><a href="#cb4-3"></a><span class="co"># observed</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a>obs</span></code></pre></div>
 <pre><code>## [1] 0.5399268</code></pre>
 </div>
 <div id="step-3-predictive-check" class="section level3">
 <h3>Step 3: Predictive Check</h3>
 <p>With the function, <code>f</code>, and the observed scores, <code>obs</code>, in hand, what is left is the predictive check</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">ppc &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </a>
-<a class="sourceLine" id="cb6-2" title="2">                       <span class="dt">FUN =</span> f, </a>
-<a class="sourceLine" id="cb6-3" title="3">                       <span class="dt">custom_obs =</span> obs, </a>
-<a class="sourceLine" id="cb6-4" title="4">                       <span class="dt">iter =</span> <span class="dv">1000</span>, </a>
-<a class="sourceLine" id="cb6-5" title="5">                       <span class="dt">loss =</span> <span class="ot">FALSE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>ppc &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </span>
+<span id="cb6-2"><a href="#cb6-2"></a>                       <span class="dt">FUN =</span> f, </span>
+<span id="cb6-3"><a href="#cb6-3"></a>                       <span class="dt">custom_obs =</span> obs, </span>
+<span id="cb6-4"><a href="#cb6-4"></a>                       <span class="dt">iter =</span> <span class="dv">1000</span>, </span>
+<span id="cb6-5"><a href="#cb6-5"></a>                       <span class="dt">loss =</span> <span class="ot">FALSE</span>)</span></code></pre></div>
 <p>Note that <code>loss = FALSE</code> controls how the p-value is computed. It is an indicator of whether the test-statistic is a “loss” (a bad thing). In this case, a large correlation is a good thing so it is set to <code>FALSE</code>. The results can then be printed</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">ppc</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>ppc</span></code></pre></div>
 <pre><code>## BGGM: Bayesian Gaussian Graphical Models 
 ## --- 
 ## Test: Global Predictive Check 
@@ -468,8 +534,8 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ## ---</code></pre>
 <p>which shows the posterior predictive p-value is zero. This indicates that the observed correlation is lower than the entire predictive distribution (the distribution of correlations for future data, assuming group equality)</p>
 <p>and finally plot the results</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">plot</span>(ppc)</a></code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">plot</span>(ppc)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <p>The density is the predictive distribution for the correlation. Recall that this is the correlation that we would expect, given the groups were actually the same, and the black point is the observed correlation. In this case, it seems quite clear that the “null model” is inadequate–the groups are apparently quite different.</p>
 </div>
 </div>
@@ -479,43 +545,43 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div id="step-1-define-custom-function-1" class="section level3">
 <h3>Step 1: Define Custom Function</h3>
 <p>The first step is to define a custom function that takes two data matrices and the output is the chosen test-statistic (in this case Hamming distance)</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1">f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</a>
-<a class="sourceLine" id="cb10-2" title="2">  <span class="co"># nodes</span></a>
-<a class="sourceLine" id="cb10-3" title="3">  p &lt;-<span class="st"> </span><span class="kw">ncol</span>(Yg1)</a>
-<a class="sourceLine" id="cb10-4" title="4">  </a>
-<a class="sourceLine" id="cb10-5" title="5">  <span class="co"># index of off-diagonal</span></a>
-<a class="sourceLine" id="cb10-6" title="6">  indices &lt;-<span class="st"> </span><span class="kw">upper.tri</span>( <span class="kw">diag</span>(p))</a>
-<a class="sourceLine" id="cb10-7" title="7"></a>
-<a class="sourceLine" id="cb10-8" title="8">  <span class="co"># fit models</span></a>
-<a class="sourceLine" id="cb10-9" title="9">  fit1 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb10-10" title="10">  fit2 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb10-11" title="11">  </a>
-<a class="sourceLine" id="cb10-12" title="12">  <span class="co"># select graphs</span></a>
-<a class="sourceLine" id="cb10-13" title="13">  sel1 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">select</span>(fit1)</a>
-<a class="sourceLine" id="cb10-14" title="14">  sel2 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">select</span>(fit2)</a>
-<a class="sourceLine" id="cb10-15" title="15">  </a>
-<a class="sourceLine" id="cb10-16" title="16">  <span class="co"># hamming distance</span></a>
-<a class="sourceLine" id="cb10-17" title="17">  <span class="kw">sum</span>((sel1<span class="op">$</span>adj[indices] <span class="op">-</span><span class="st"> </span>sel2<span class="op">$</span>adj[indices]) <span class="op">^</span><span class="st"> </span><span class="dv">2</span>)</a>
-<a class="sourceLine" id="cb10-18" title="18">}</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</span>
+<span id="cb10-2"><a href="#cb10-2"></a>  <span class="co"># nodes</span></span>
+<span id="cb10-3"><a href="#cb10-3"></a>  p &lt;-<span class="st"> </span><span class="kw">ncol</span>(Yg1)</span>
+<span id="cb10-4"><a href="#cb10-4"></a>  </span>
+<span id="cb10-5"><a href="#cb10-5"></a>  <span class="co"># index of off-diagonal</span></span>
+<span id="cb10-6"><a href="#cb10-6"></a>  indices &lt;-<span class="st"> </span><span class="kw">upper.tri</span>( <span class="kw">diag</span>(p))</span>
+<span id="cb10-7"><a href="#cb10-7"></a></span>
+<span id="cb10-8"><a href="#cb10-8"></a>  <span class="co"># fit models</span></span>
+<span id="cb10-9"><a href="#cb10-9"></a>  fit1 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb10-10"><a href="#cb10-10"></a>  fit2 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb10-11"><a href="#cb10-11"></a>  </span>
+<span id="cb10-12"><a href="#cb10-12"></a>  <span class="co"># select graphs</span></span>
+<span id="cb10-13"><a href="#cb10-13"></a>  sel1 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">select</span>(fit1)</span>
+<span id="cb10-14"><a href="#cb10-14"></a>  sel2 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">select</span>(fit2)</span>
+<span id="cb10-15"><a href="#cb10-15"></a>  </span>
+<span id="cb10-16"><a href="#cb10-16"></a>  <span class="co"># hamming distance</span></span>
+<span id="cb10-17"><a href="#cb10-17"></a>  <span class="kw">sum</span>((sel1<span class="op">$</span>adj[indices] <span class="op">-</span><span class="st"> </span>sel2<span class="op">$</span>adj[indices]) <span class="op">^</span><span class="st"> </span><span class="dv">2</span>)</span>
+<span id="cb10-18"><a href="#cb10-18"></a>}</span></code></pre></div>
 </div>
 <div id="step-2-compute-the-observed-score-1" class="section level3">
 <h3>Step 2: Compute the Observed Score</h3>
 <p>The next step is to compute the observed test-statistic, that is, the Hamming distance between adjacency matrices</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1">obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</a>
-<a class="sourceLine" id="cb11-2" title="2"></a>
-<a class="sourceLine" id="cb11-3" title="3"><span class="co"># observed</span></a>
-<a class="sourceLine" id="cb11-4" title="4">obs</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</span>
+<span id="cb11-2"><a href="#cb11-2"></a></span>
+<span id="cb11-3"><a href="#cb11-3"></a><span class="co"># observed</span></span>
+<span id="cb11-4"><a href="#cb11-4"></a>obs</span></code></pre></div>
 <pre><code>## [1] 60</code></pre>
 </div>
 <div id="step-3-predictive-check-1" class="section level3">
 <h3>Step 3: Predictive Check</h3>
 <p>With the function, <code>f</code>, and the observed scores, <code>obs</code>, in hand, what is left is the predictive check</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1">ppc &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </a>
-<a class="sourceLine" id="cb13-2" title="2">                       <span class="dt">FUN =</span> f, </a>
-<a class="sourceLine" id="cb13-3" title="3">                       <span class="dt">custom_obs =</span> obs, </a>
-<a class="sourceLine" id="cb13-4" title="4">                       <span class="dt">iter =</span> <span class="dv">1000</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>ppc &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </span>
+<span id="cb13-2"><a href="#cb13-2"></a>                       <span class="dt">FUN =</span> f, </span>
+<span id="cb13-3"><a href="#cb13-3"></a>                       <span class="dt">custom_obs =</span> obs, </span>
+<span id="cb13-4"><a href="#cb13-4"></a>                       <span class="dt">iter =</span> <span class="dv">1000</span>)</span></code></pre></div>
 <p>The results can then be printed</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">ppc</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>ppc</span></code></pre></div>
 <pre><code>## BGGM: Bayesian Gaussian Graphical Models 
 ## --- 
 ## Test: Global Predictive Check 
@@ -534,9 +600,9 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ##  Yg1 vs Yg2         60       0
 ## ---</code></pre>
 <p>And then plot the results</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">plot</span>(ppc)</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">plot</span>(ppc)</span></code></pre></div>
 <pre><code>## $plot_custom</code></pre>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <p>This result is intriguing. Whereas the correlation looked at the relation between partial correlation, here there seems to be evidence that the adjacency matrices are different (perhaps suggesting that the conditional independence structure is different).</p>
 </div>
 </div>
@@ -545,43 +611,43 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>There might also be interest in the so-called correlation matrix distance <span class="citation">(Herdin et al. 2005)</span>. This is also easily tested, in this case for the partial correlation matrix.</p>
 <div id="step-1-define-custom-function-2" class="section level3">
 <h3>Step 1: Define Custom Function</h3>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1">f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</a>
-<a class="sourceLine" id="cb18-2" title="2">  <span class="co"># nodes</span></a>
-<a class="sourceLine" id="cb18-3" title="3">  p &lt;-<span class="st"> </span><span class="kw">ncol</span>(Yg1)</a>
-<a class="sourceLine" id="cb18-4" title="4">  </a>
-<a class="sourceLine" id="cb18-5" title="5">  <span class="co"># index of off-diagonal</span></a>
-<a class="sourceLine" id="cb18-6" title="6">  indices &lt;-<span class="st"> </span><span class="kw">upper.tri</span>( <span class="kw">diag</span>(p))</a>
-<a class="sourceLine" id="cb18-7" title="7"></a>
-<a class="sourceLine" id="cb18-8" title="8">  <span class="co"># fit models</span></a>
-<a class="sourceLine" id="cb18-9" title="9">  fit1 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb18-10" title="10">  fit2 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb18-11" title="11">  </a>
-<a class="sourceLine" id="cb18-12" title="12">  pcor1 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit1) </a>
-<a class="sourceLine" id="cb18-13" title="13">  pcor2 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit2)</a>
-<a class="sourceLine" id="cb18-14" title="14">  </a>
-<a class="sourceLine" id="cb18-15" title="15">  <span class="co"># CDM for partial correlations</span></a>
-<a class="sourceLine" id="cb18-16" title="16">  <span class="co"># note: numerator is the trace; denominator is the Frobenius norm</span></a>
-<a class="sourceLine" id="cb18-17" title="17">  <span class="dv">1</span> <span class="op">-</span><span class="st"> </span>(<span class="kw">sum</span>(<span class="kw">diag</span>(pcor1 <span class="op">%*%</span><span class="st"> </span>pcor2)) <span class="op">/</span><span class="st"> </span>(<span class="kw">norm</span>(pcor1, <span class="dt">type =</span> <span class="st">&quot;f&quot;</span>) <span class="op">*</span><span class="st"> </span><span class="kw">norm</span>(pcor2, <span class="dt">type =</span> <span class="st">&quot;f&quot;</span>)))</a>
-<a class="sourceLine" id="cb18-18" title="18">}</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</span>
+<span id="cb18-2"><a href="#cb18-2"></a>  <span class="co"># nodes</span></span>
+<span id="cb18-3"><a href="#cb18-3"></a>  p &lt;-<span class="st"> </span><span class="kw">ncol</span>(Yg1)</span>
+<span id="cb18-4"><a href="#cb18-4"></a>  </span>
+<span id="cb18-5"><a href="#cb18-5"></a>  <span class="co"># index of off-diagonal</span></span>
+<span id="cb18-6"><a href="#cb18-6"></a>  indices &lt;-<span class="st"> </span><span class="kw">upper.tri</span>( <span class="kw">diag</span>(p))</span>
+<span id="cb18-7"><a href="#cb18-7"></a></span>
+<span id="cb18-8"><a href="#cb18-8"></a>  <span class="co"># fit models</span></span>
+<span id="cb18-9"><a href="#cb18-9"></a>  fit1 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb18-10"><a href="#cb18-10"></a>  fit2 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb18-11"><a href="#cb18-11"></a>  </span>
+<span id="cb18-12"><a href="#cb18-12"></a>  pcor1 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit1) </span>
+<span id="cb18-13"><a href="#cb18-13"></a>  pcor2 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit2)</span>
+<span id="cb18-14"><a href="#cb18-14"></a>  </span>
+<span id="cb18-15"><a href="#cb18-15"></a>  <span class="co"># CDM for partial correlations</span></span>
+<span id="cb18-16"><a href="#cb18-16"></a>  <span class="co"># note: numerator is the trace; denominator is the Frobenius norm</span></span>
+<span id="cb18-17"><a href="#cb18-17"></a>  <span class="dv">1</span> <span class="op">-</span><span class="st"> </span>(<span class="kw">sum</span>(<span class="kw">diag</span>(pcor1 <span class="op">%*%</span><span class="st"> </span>pcor2)) <span class="op">/</span><span class="st"> </span>(<span class="kw">norm</span>(pcor1, <span class="dt">type =</span> <span class="st">&quot;f&quot;</span>) <span class="op">*</span><span class="st"> </span><span class="kw">norm</span>(pcor2, <span class="dt">type =</span> <span class="st">&quot;f&quot;</span>)))</span>
+<span id="cb18-18"><a href="#cb18-18"></a>}</span></code></pre></div>
 </div>
 <div id="step-2-compute-the-observed-score-2" class="section level3">
 <h3>Step 2: Compute the Observed Score</h3>
 <p>The next step is to compute the observed test-statistic, that is, the Partial Correlation Matrix Distance</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1">obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</a>
-<a class="sourceLine" id="cb19-2" title="2"></a>
-<a class="sourceLine" id="cb19-3" title="3"><span class="co"># observed</span></a>
-<a class="sourceLine" id="cb19-4" title="4">obs</a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</span>
+<span id="cb19-2"><a href="#cb19-2"></a></span>
+<span id="cb19-3"><a href="#cb19-3"></a><span class="co"># observed</span></span>
+<span id="cb19-4"><a href="#cb19-4"></a>obs</span></code></pre></div>
 <pre><code>## [1] 0.3430489</code></pre>
 </div>
 <div id="step-3-predictive-check-2" class="section level3">
 <h3>Step 3: Predictive Check</h3>
 <p>With the function, <code>f</code>, and the observed scores, <code>obs</code>, in hand, what is left is the predictive check</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1">ppc &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </a>
-<a class="sourceLine" id="cb21-2" title="2">                       <span class="dt">FUN =</span> f, </a>
-<a class="sourceLine" id="cb21-3" title="3">                       <span class="dt">custom_obs =</span> obs, </a>
-<a class="sourceLine" id="cb21-4" title="4">                       <span class="dt">iter =</span> <span class="dv">1000</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>ppc &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </span>
+<span id="cb21-2"><a href="#cb21-2"></a>                       <span class="dt">FUN =</span> f, </span>
+<span id="cb21-3"><a href="#cb21-3"></a>                       <span class="dt">custom_obs =</span> obs, </span>
+<span id="cb21-4"><a href="#cb21-4"></a>                       <span class="dt">iter =</span> <span class="dv">1000</span>)</span></code></pre></div>
 <p>The results can then be printed</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" title="1">ppc</a></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>ppc</span></code></pre></div>
 <pre><code>## BGGM: Bayesian Gaussian Graphical Models 
 ## --- 
 ## Test: Global Predictive Check 
@@ -601,11 +667,11 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ## ---</code></pre>
 <p>which again provides a p-value of zero.</p>
 <p>Note that the object <code>ppc</code> includes the predictive samples that allows for user defined plots (in the event something custom is desired).</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1"><span class="kw">hist</span>(ppc<span class="op">$</span>predictive_custom, </a>
-<a class="sourceLine" id="cb24-2" title="2">     <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>, obs), </a>
-<a class="sourceLine" id="cb24-3" title="3">     <span class="dt">main =</span> <span class="st">&quot;Partial Correlation Matrix Distance&quot;</span>)</a>
-<a class="sourceLine" id="cb24-4" title="4"><span class="kw">abline</span>(<span class="dt">v =</span> obs)</a></code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="kw">hist</span>(ppc<span class="op">$</span>predictive_custom, </span>
+<span id="cb24-2"><a href="#cb24-2"></a>     <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>, obs), </span>
+<span id="cb24-3"><a href="#cb24-3"></a>     <span class="dt">main =</span> <span class="st">&quot;Partial Correlation Matrix Distance&quot;</span>)</span>
+<span id="cb24-4"><a href="#cb24-4"></a><span class="kw">abline</span>(<span class="dt">v =</span> obs)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <p>Note that the line is the observed which again makes it clear that the distance is quite surprising, assuming the null model were true.</p>
 </div>
 </div>
@@ -614,49 +680,49 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>This next example is assortment <span class="citation">(Newman 2003)</span>, which is a measure related to clustering in a network. Here the test is for a difference in assortment. This is computed by taking the difference (absolute value) for each draw from the predictive distribution.</p>
 <div id="step-1-define-custom-function-3" class="section level3">
 <h3>Step 1: Define Custom Function</h3>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1"><span class="co"># clusters based on DSM-5</span></a>
-<a class="sourceLine" id="cb25-2" title="2">comms &lt;-<span class="st"> </span><span class="kw">c</span>(</a>
-<a class="sourceLine" id="cb25-3" title="3">  <span class="kw">rep</span>(<span class="st">&quot;A&quot;</span>, <span class="dv">4</span>),</a>
-<a class="sourceLine" id="cb25-4" title="4">  <span class="kw">rep</span>(<span class="st">&quot;B&quot;</span>, <span class="dv">7</span>),</a>
-<a class="sourceLine" id="cb25-5" title="5">  <span class="kw">rep</span>(<span class="st">&quot;C&quot;</span>, <span class="dv">5</span>)</a>
-<a class="sourceLine" id="cb25-6" title="6">)</a>
-<a class="sourceLine" id="cb25-7" title="7"></a>
-<a class="sourceLine" id="cb25-8" title="8">f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</a>
-<a class="sourceLine" id="cb25-9" title="9"></a>
-<a class="sourceLine" id="cb25-10" title="10">  fit1 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb25-11" title="11">  fit2 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb25-12" title="12"></a>
-<a class="sourceLine" id="cb25-13" title="13">  pcor1 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit1)</a>
-<a class="sourceLine" id="cb25-14" title="14">  pcor2 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit2)</a>
-<a class="sourceLine" id="cb25-15" title="15"></a>
-<a class="sourceLine" id="cb25-16" title="16">  assort1 &lt;-<span class="st"> </span>assortnet<span class="op">::</span><span class="kw">assortment.discrete</span>(pcor1, <span class="dt">types =</span> comms,</a>
-<a class="sourceLine" id="cb25-17" title="17">                                         <span class="dt">weighted =</span> <span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb25-18" title="18">                                         <span class="dt">SE =</span> <span class="ot">FALSE</span>, <span class="dt">M =</span> <span class="dv">1</span>)<span class="op">$</span>r</a>
-<a class="sourceLine" id="cb25-19" title="19"></a>
-<a class="sourceLine" id="cb25-20" title="20">  assort2 &lt;-<span class="st"> </span>assortnet<span class="op">::</span><span class="kw">assortment.discrete</span>(pcor2, <span class="dt">types =</span> comms,</a>
-<a class="sourceLine" id="cb25-21" title="21">                                          <span class="dt">weighted =</span> <span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb25-22" title="22">                                          <span class="dt">SE =</span> <span class="ot">FALSE</span>, <span class="dt">M =</span> <span class="dv">1</span>)<span class="op">$</span>r</a>
-<a class="sourceLine" id="cb25-23" title="23">  (assort1 <span class="op">-</span><span class="st"> </span>assort2)</a>
-<a class="sourceLine" id="cb25-24" title="24">}</a></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="co"># clusters based on DSM-5</span></span>
+<span id="cb25-2"><a href="#cb25-2"></a>comms &lt;-<span class="st"> </span><span class="kw">c</span>(</span>
+<span id="cb25-3"><a href="#cb25-3"></a>  <span class="kw">rep</span>(<span class="st">&quot;A&quot;</span>, <span class="dv">4</span>),</span>
+<span id="cb25-4"><a href="#cb25-4"></a>  <span class="kw">rep</span>(<span class="st">&quot;B&quot;</span>, <span class="dv">7</span>),</span>
+<span id="cb25-5"><a href="#cb25-5"></a>  <span class="kw">rep</span>(<span class="st">&quot;C&quot;</span>, <span class="dv">5</span>)</span>
+<span id="cb25-6"><a href="#cb25-6"></a>)</span>
+<span id="cb25-7"><a href="#cb25-7"></a></span>
+<span id="cb25-8"><a href="#cb25-8"></a>f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</span>
+<span id="cb25-9"><a href="#cb25-9"></a></span>
+<span id="cb25-10"><a href="#cb25-10"></a>  fit1 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb25-11"><a href="#cb25-11"></a>  fit2 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb25-12"><a href="#cb25-12"></a></span>
+<span id="cb25-13"><a href="#cb25-13"></a>  pcor1 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit1)</span>
+<span id="cb25-14"><a href="#cb25-14"></a>  pcor2 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit2)</span>
+<span id="cb25-15"><a href="#cb25-15"></a></span>
+<span id="cb25-16"><a href="#cb25-16"></a>  assort1 &lt;-<span class="st"> </span>assortnet<span class="op">::</span><span class="kw">assortment.discrete</span>(pcor1, <span class="dt">types =</span> comms,</span>
+<span id="cb25-17"><a href="#cb25-17"></a>                                         <span class="dt">weighted =</span> <span class="ot">TRUE</span>,</span>
+<span id="cb25-18"><a href="#cb25-18"></a>                                         <span class="dt">SE =</span> <span class="ot">FALSE</span>, <span class="dt">M =</span> <span class="dv">1</span>)<span class="op">$</span>r</span>
+<span id="cb25-19"><a href="#cb25-19"></a></span>
+<span id="cb25-20"><a href="#cb25-20"></a>  assort2 &lt;-<span class="st"> </span>assortnet<span class="op">::</span><span class="kw">assortment.discrete</span>(pcor2, <span class="dt">types =</span> comms,</span>
+<span id="cb25-21"><a href="#cb25-21"></a>                                          <span class="dt">weighted =</span> <span class="ot">TRUE</span>,</span>
+<span id="cb25-22"><a href="#cb25-22"></a>                                          <span class="dt">SE =</span> <span class="ot">FALSE</span>, <span class="dt">M =</span> <span class="dv">1</span>)<span class="op">$</span>r</span>
+<span id="cb25-23"><a href="#cb25-23"></a>  (assort1 <span class="op">-</span><span class="st"> </span>assort2)</span>
+<span id="cb25-24"><a href="#cb25-24"></a>}</span></code></pre></div>
 </div>
 <div id="step-2-compute-the-observed-score-3" class="section level3">
 <h3>Step 2: Compute the Observed Score</h3>
 <p>The next step is to compute the observed test-statistic, that is, assortment for the two groups</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1">obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</a>
-<a class="sourceLine" id="cb26-2" title="2"></a>
-<a class="sourceLine" id="cb26-3" title="3"><span class="co"># observed</span></a>
-<a class="sourceLine" id="cb26-4" title="4">obs</a></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</span>
+<span id="cb26-2"><a href="#cb26-2"></a></span>
+<span id="cb26-3"><a href="#cb26-3"></a><span class="co"># observed</span></span>
+<span id="cb26-4"><a href="#cb26-4"></a>obs</span></code></pre></div>
 <pre><code>## [1] 0.1915766</code></pre>
 </div>
 <div id="step-3-predictive-check-3" class="section level3">
 <h3>Step 3: Predictive Check</h3>
 <p>With the function, <code>f</code>, and the observed score, <code>obs</code>, in hand, the next step is the predictive check</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" title="1">ppc &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </a>
-<a class="sourceLine" id="cb28-2" title="2">                       <span class="dt">FUN =</span> f, </a>
-<a class="sourceLine" id="cb28-3" title="3">                       <span class="dt">custom_obs =</span> obs, </a>
-<a class="sourceLine" id="cb28-4" title="4">                       <span class="dt">iter =</span> <span class="dv">1000</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a>ppc &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </span>
+<span id="cb28-2"><a href="#cb28-2"></a>                       <span class="dt">FUN =</span> f, </span>
+<span id="cb28-3"><a href="#cb28-3"></a>                       <span class="dt">custom_obs =</span> obs, </span>
+<span id="cb28-4"><a href="#cb28-4"></a>                       <span class="dt">iter =</span> <span class="dv">1000</span>)</span></code></pre></div>
 <p>The results can then be printed</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" title="1">ppc</a></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a>ppc</span></code></pre></div>
 <pre><code>## BGGM: Bayesian Gaussian Graphical Models 
 ## --- 
 ## Test: Global Predictive Check 
@@ -675,10 +741,10 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ##  Yg1 vs Yg2      0.192       0
 ## ---</code></pre>
 <p>and plotted</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" title="1"><span class="kw">plot</span>(ppc)</a></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a><span class="kw">plot</span>(ppc)</span></code></pre></div>
 <pre><code>## $plot_custom</code></pre>
-<pre><code>## Picking joint bandwidth of 0.00687</code></pre>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<pre><code>## Picking joint bandwidth of 0.0072</code></pre>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <p>which shows that the clustering in the data appears to be different (given the observed value exceeds the entire predictive distribution).</p>
 </div>
 </div>
@@ -687,38 +753,38 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>This last example looks at the expected influence for the network <span class="citation">(Robinaugh, Millner, and McNally 2016)</span>. In this case, the sum of squared error is the test statistic. This is computed from the squared error for each draw from the predictive distribution.</p>
 <div id="step-1-define-custom-function-4" class="section level3">
 <h3>Step 1: Define Custom Function</h3>
-<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb34-1" title="1">f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</a>
-<a class="sourceLine" id="cb34-2" title="2"></a>
-<a class="sourceLine" id="cb34-3" title="3">  fit1 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb34-4" title="4">  fit2 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb34-5" title="5"></a>
-<a class="sourceLine" id="cb34-6" title="6">  pcor1 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit1)</a>
-<a class="sourceLine" id="cb34-7" title="7">  pcor2 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit2)</a>
-<a class="sourceLine" id="cb34-8" title="8"></a>
-<a class="sourceLine" id="cb34-9" title="9">  ei1 &lt;-<span class="st"> </span>networktools<span class="op">::</span><span class="kw">expectedInf</span>(pcor1)<span class="op">$</span>step1</a>
-<a class="sourceLine" id="cb34-10" title="10"> </a>
-<a class="sourceLine" id="cb34-11" title="11">  ei2 &lt;-<span class="st"> </span>networktools<span class="op">::</span><span class="kw">expectedInf</span>(pcor2)<span class="op">$</span>step1</a>
-<a class="sourceLine" id="cb34-12" title="12">   <span class="kw">sum</span>((ei1 <span class="op">-</span><span class="st"> </span>ei2)<span class="op">^</span><span class="dv">2</span>)</a>
-<a class="sourceLine" id="cb34-13" title="13">}</a></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a>f &lt;-<span class="st"> </span><span class="cf">function</span>(Yg1, Yg2){</span>
+<span id="cb34-2"><a href="#cb34-2"></a></span>
+<span id="cb34-3"><a href="#cb34-3"></a>  fit1 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg1, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb34-4"><a href="#cb34-4"></a>  fit2 &lt;-<span class="st">  </span>BGGM<span class="op">::</span><span class="kw">estimate</span>(Yg2, <span class="dt">analytic =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb34-5"><a href="#cb34-5"></a></span>
+<span id="cb34-6"><a href="#cb34-6"></a>  pcor1 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit1)</span>
+<span id="cb34-7"><a href="#cb34-7"></a>  pcor2 &lt;-<span class="st"> </span>BGGM<span class="op">::</span><span class="kw">pcor_mat</span>(fit2)</span>
+<span id="cb34-8"><a href="#cb34-8"></a></span>
+<span id="cb34-9"><a href="#cb34-9"></a>  ei1 &lt;-<span class="st"> </span>networktools<span class="op">::</span><span class="kw">expectedInf</span>(pcor1)<span class="op">$</span>step1</span>
+<span id="cb34-10"><a href="#cb34-10"></a> </span>
+<span id="cb34-11"><a href="#cb34-11"></a>  ei2 &lt;-<span class="st"> </span>networktools<span class="op">::</span><span class="kw">expectedInf</span>(pcor2)<span class="op">$</span>step1</span>
+<span id="cb34-12"><a href="#cb34-12"></a>   <span class="kw">sum</span>((ei1 <span class="op">-</span><span class="st"> </span>ei2)<span class="op">^</span><span class="dv">2</span>)</span>
+<span id="cb34-13"><a href="#cb34-13"></a>}</span></code></pre></div>
 </div>
 <div id="step-2-compute-the-observed-score-4" class="section level3">
 <h3>Step 2: Compute the Observed Score</h3>
 <p>The next step is to compute the observed test-statistic, that is, the sum of squared error for expected influence</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb35-1" title="1">obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</a>
-<a class="sourceLine" id="cb35-2" title="2"></a>
-<a class="sourceLine" id="cb35-3" title="3"><span class="co"># observed</span></a>
-<a class="sourceLine" id="cb35-4" title="4">obs</a></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a>obs &lt;-<span class="st"> </span><span class="kw">f</span>(Yg1, Yg2)</span>
+<span id="cb35-2"><a href="#cb35-2"></a></span>
+<span id="cb35-3"><a href="#cb35-3"></a><span class="co"># observed</span></span>
+<span id="cb35-4"><a href="#cb35-4"></a>obs</span></code></pre></div>
 <pre><code>## [1] 0.518462</code></pre>
 </div>
 <div id="step-3-predictive-check-4" class="section level3">
 <h3>Step 3: Predictive Check</h3>
 <p>With the function, <code>f</code>, and the observed scores, <code>obs</code>, in hand, what is left is the predictive check</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1">ppc &lt;-<span class="st"> </span>BGGM<span class="op">:::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </a>
-<a class="sourceLine" id="cb37-2" title="2">                       <span class="dt">FUN =</span> f, </a>
-<a class="sourceLine" id="cb37-3" title="3">                       <span class="dt">custom_obs =</span> obs, </a>
-<a class="sourceLine" id="cb37-4" title="4">                       <span class="dt">iter =</span> <span class="dv">1000</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a>ppc &lt;-<span class="st"> </span>BGGM<span class="op">:::</span><span class="kw">ggm_compare_ppc</span>(Yg1, Yg2, </span>
+<span id="cb37-2"><a href="#cb37-2"></a>                       <span class="dt">FUN =</span> f, </span>
+<span id="cb37-3"><a href="#cb37-3"></a>                       <span class="dt">custom_obs =</span> obs, </span>
+<span id="cb37-4"><a href="#cb37-4"></a>                       <span class="dt">iter =</span> <span class="dv">1000</span>)</span></code></pre></div>
 <p>The results can then be printed</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb38-1" title="1">ppc</a></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a>ppc</span></code></pre></div>
 <pre><code>## BGGM: Bayesian Gaussian Graphical Models 
 ## --- 
 ## Test: Global Predictive Check 
@@ -737,11 +803,11 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ##  Yg1 vs Yg2      0.518       0
 ## ---</code></pre>
 <p>and plotted</p>
-<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb40-1" title="1"><span class="kw">hist</span>(ppc<span class="op">$</span>predictive_custom, </a>
-<a class="sourceLine" id="cb40-2" title="2">    <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>, obs),</a>
-<a class="sourceLine" id="cb40-3" title="3">     <span class="dt">main =</span> <span class="st">&quot;Expected Influence</span><span class="ch">\n</span><span class="st"> Sum of Squared Error&quot;</span>)</a>
-<a class="sourceLine" id="cb40-4" title="4"><span class="kw">abline</span>(<span class="dt">v =</span> obs)</a></code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --> which again shows the sum of squared error for expected influence far exceeds what would be expected, assuming the null model were true.</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1"></a><span class="kw">hist</span>(ppc<span class="op">$</span>predictive_custom, </span>
+<span id="cb40-2"><a href="#cb40-2"></a>    <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>, obs),</span>
+<span id="cb40-3"><a href="#cb40-3"></a>     <span class="dt">main =</span> <span class="st">&quot;Expected Influence</span><span class="ch">\n</span><span class="st"> Sum of Squared Error&quot;</span>)</span>
+<span id="cb40-4"><a href="#cb40-4"></a><span class="kw">abline</span>(<span class="dt">v =</span> obs)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --> which again shows the sum of squared error for expected influence far exceeds what would be expected, assuming the null model were true.</p>
 </div>
 </div>
 </div>

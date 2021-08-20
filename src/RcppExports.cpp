@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // mean_array
 arma::mat mean_array(arma::cube x);
 RcppExport SEXP _BGGM_mean_array(SEXP xSEXP) {
@@ -14,6 +19,18 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::cube >::type x(xSEXP);
     rcpp_result_gen = Rcpp::wrap(mean_array(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// quantile_type_1
+double quantile_type_1(arma::vec x, double prob);
+RcppExport SEXP _BGGM_quantile_type_1(SEXP xSEXP, SEXP probSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type prob(probSEXP);
+    rcpp_result_gen = Rcpp::wrap(quantile_type_1(x, prob));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -92,8 +109,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // missing_gaussian
-Rcpp::List missing_gaussian(arma::mat Y, arma::mat Y_missing, arma::mat Sigma, int iter_missing, bool progress_impute, bool store_all);
-RcppExport SEXP _BGGM_missing_gaussian(SEXP YSEXP, SEXP Y_missingSEXP, SEXP SigmaSEXP, SEXP iter_missingSEXP, SEXP progress_imputeSEXP, SEXP store_allSEXP) {
+Rcpp::List missing_gaussian(arma::mat Y, arma::mat Y_missing, arma::mat Sigma, int iter_missing, bool progress_impute, bool store_all, float lambda);
+RcppExport SEXP _BGGM_missing_gaussian(SEXP YSEXP, SEXP Y_missingSEXP, SEXP SigmaSEXP, SEXP iter_missingSEXP, SEXP progress_imputeSEXP, SEXP store_allSEXP, SEXP lambdaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -103,7 +120,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type iter_missing(iter_missingSEXP);
     Rcpp::traits::input_parameter< bool >::type progress_impute(progress_imputeSEXP);
     Rcpp::traits::input_parameter< bool >::type store_all(store_allSEXP);
-    rcpp_result_gen = Rcpp::wrap(missing_gaussian(Y, Y_missing, Sigma, iter_missing, progress_impute, store_all));
+    Rcpp::traits::input_parameter< float >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(missing_gaussian(Y, Y_missing, Sigma, iter_missing, progress_impute, store_all, lambda));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -539,16 +557,58 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// missing_copula
+Rcpp::List missing_copula(arma::mat Y, arma::mat Y_missing, arma::mat z0_start, arma::mat Sigma_start, arma::mat levels, int iter_missing, bool progress_impute, arma::vec K, arma::vec idx, float epsilon, float delta);
+RcppExport SEXP _BGGM_missing_copula(SEXP YSEXP, SEXP Y_missingSEXP, SEXP z0_startSEXP, SEXP Sigma_startSEXP, SEXP levelsSEXP, SEXP iter_missingSEXP, SEXP progress_imputeSEXP, SEXP KSEXP, SEXP idxSEXP, SEXP epsilonSEXP, SEXP deltaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Y_missing(Y_missingSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type z0_start(z0_startSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Sigma_start(Sigma_startSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type levels(levelsSEXP);
+    Rcpp::traits::input_parameter< int >::type iter_missing(iter_missingSEXP);
+    Rcpp::traits::input_parameter< bool >::type progress_impute(progress_imputeSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< float >::type epsilon(epsilonSEXP);
+    Rcpp::traits::input_parameter< float >::type delta(deltaSEXP);
+    rcpp_result_gen = Rcpp::wrap(missing_copula(Y, Y_missing, z0_start, Sigma_start, levels, iter_missing, progress_impute, K, idx, epsilon, delta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// missing_copula_data
+Rcpp::List missing_copula_data(arma::mat Y, arma::mat Y_missing, arma::mat z0_start, arma::mat Sigma_start, arma::mat levels, int iter_missing, bool progress_impute, arma::vec K, arma::vec idx, float lambda);
+RcppExport SEXP _BGGM_missing_copula_data(SEXP YSEXP, SEXP Y_missingSEXP, SEXP z0_startSEXP, SEXP Sigma_startSEXP, SEXP levelsSEXP, SEXP iter_missingSEXP, SEXP progress_imputeSEXP, SEXP KSEXP, SEXP idxSEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Y_missing(Y_missingSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type z0_start(z0_startSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Sigma_start(Sigma_startSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type levels(levelsSEXP);
+    Rcpp::traits::input_parameter< int >::type iter_missing(iter_missingSEXP);
+    Rcpp::traits::input_parameter< bool >::type progress_impute(progress_imputeSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< float >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(missing_copula_data(Y, Y_missing, z0_start, Sigma_start, levels, iter_missing, progress_impute, K, idx, lambda));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_BGGM_mean_array", (DL_FUNC) &_BGGM_mean_array, 1},
+    {"_BGGM_quantile_type_1", (DL_FUNC) &_BGGM_quantile_type_1, 2},
     {"_BGGM_Sigma_i_not_i", (DL_FUNC) &_BGGM_Sigma_i_not_i, 2},
     {"_BGGM_select_col", (DL_FUNC) &_BGGM_select_col, 2},
     {"_BGGM_select_row", (DL_FUNC) &_BGGM_select_row, 2},
     {"_BGGM_remove_row", (DL_FUNC) &_BGGM_remove_row, 2},
     {"_BGGM_remove_col", (DL_FUNC) &_BGGM_remove_col, 2},
     {"_BGGM_internal_missing_gaussian", (DL_FUNC) &_BGGM_internal_missing_gaussian, 4},
-    {"_BGGM_missing_gaussian", (DL_FUNC) &_BGGM_missing_gaussian, 6},
+    {"_BGGM_missing_gaussian", (DL_FUNC) &_BGGM_missing_gaussian, 7},
     {"_BGGM_Theta_continuous", (DL_FUNC) &_BGGM_Theta_continuous, 10},
     {"_BGGM_sample_prior", (DL_FUNC) &_BGGM_sample_prior, 7},
     {"_BGGM_mv_continuous", (DL_FUNC) &_BGGM_mv_continuous, 7},
@@ -577,6 +637,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BGGM_search", (DL_FUNC) &_BGGM_search, 8},
     {"_BGGM_fast_g_matrix_F", (DL_FUNC) &_BGGM_fast_g_matrix_F, 10},
     {"_BGGM_contrained_helper", (DL_FUNC) &_BGGM_contrained_helper, 4},
+    {"_BGGM_missing_copula", (DL_FUNC) &_BGGM_missing_copula, 11},
+    {"_BGGM_missing_copula_data", (DL_FUNC) &_BGGM_missing_copula_data, 10},
     {NULL, NULL, 0}
 };
 

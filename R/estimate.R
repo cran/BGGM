@@ -205,24 +205,29 @@ estimate  <- function(Y,
                       analytic = FALSE,
                       prior_sd = 0.25,
                       iter = 5000,
-                      impute = TRUE,
+                      impute = FALSE,
                       progress = TRUE,
                       seed = 1,
                       ...){
 
   # temporary warning until missing data is fully implemented
-  if(type != "continuous"){
+  if(!type %in% c("continuous", "mixed")){
 
     warning(paste0("imputation during model fitting is\n",
-                   "currently only implemented for 'continuous' data."))
+                   "currently only implemented for 'continuous'
+                   and 'mixed' data."))
     }
 
-  old <- .Random.seed
+  # removed per CRAN (8/12/21)
+  #old <- .Random.seed
 
   set.seed(seed)
 
   # delta rho ~ beta(delta/2, delta/2)
   delta <- delta_solve(prior_sd)
+
+  # nodes
+  p <- ncol(Y)
 
   # sample posterior
   if(!analytic){
@@ -253,8 +258,7 @@ estimate  <- function(Y,
             impute <- FALSE
             }
 
-          # nodes
-          p <- ncol(Y)
+
 
           # impute means
           for(i in 1:p){
@@ -440,7 +444,7 @@ estimate  <- function(Y,
         )
 
         } else if(type == "mixed"){
-
+          X <- NULL
           # no control variables allowed
           if(!is.null(formula)){
 
@@ -454,22 +458,12 @@ estimate  <- function(Y,
 
             formula <- NULL
 
-            X <- NULL
-
-          } else {
-
-             Y <- na.omit(Y)
-
-             X <- NULL
-
-            }
+          }
 
           # default for ranks
           if(is.null(mixed_type)) {
 
-            idx = colMeans(round(Y) == Y)
-
-            idx = ifelse(idx == 1, 1, 0)
+            idx = rep(1, ncol(Y))
 
             # user defined
             } else {
@@ -487,19 +481,48 @@ estimate  <- function(Y,
           # rank following hoff (2008)
           rank_vars <- rank_helper(Y)
 
-      post_samp <- .Call(
-        "_BGGM_copula",
-        z0_start = rank_vars$z0_start,
-        levels = rank_vars$levels,
-        K = rank_vars$K,
-        Sigma_start = cov(Y),
-        iter = iter + 50,
-        delta = delta,
-        epsilon = 0.1,
-        idx = idx,
-        progress = progress
-      )
-      } else {
+          if(impute){
+
+        Y_missing <- ifelse(is.na(Y), 1, 0)
+
+        rank_vars$z0_start[is.na(rank_vars$z0_start)] <- rnorm(sum(Y_missing))
+
+        post_samp <- .Call(
+          "_BGGM_missing_copula",
+          Y = Y,
+          Y_missing = Y_missing,
+          z0_start = rank_vars$z0_start,
+          Sigma_start = cov(rank_vars$z0_start),
+          levels = rank_vars$levels,
+          iter_missing = iter + 50,
+          progress_impute = TRUE,
+          K = rank_vars$K,
+          idx = idx,
+          epsilon = 0.1,
+          delta = delta
+        )
+
+        } else {
+
+          Y <- na.omit(Y)
+
+
+
+          post_samp <- .Call(
+            "_BGGM_copula",
+            z0_start = rank_vars$z0_start,
+            levels = rank_vars$levels,
+            K = rank_vars$K,
+            Sigma_start = cov(Y),
+            iter = iter + 50,
+            delta = delta,
+            epsilon = 0.1,
+            idx = idx,
+            progress = progress
+          )
+    }
+
+  } else {
 
         stop("'type' not supported: must be continuous, binary, ordinal, or mixed.")
       }
@@ -568,7 +591,8 @@ estimate  <- function(Y,
 
     } # end analytic
 
-  .Random.seed <<- old
+  # removed per CRAN (8/12/21)
+  #.Random.seed <<- old
 
   returned_object <- results
 

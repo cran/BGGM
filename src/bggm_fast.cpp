@@ -302,10 +302,11 @@ Rcpp::List Theta_continuous(arma::mat Y,
   arma::mat  I_k(k, k, arma::fill::eye);
 
   int nu = 1/ epsilon;
+
   // // #nu in Mulder & Pericchi (2018) formula (30) line 1.
   int nuMP = delta + k - 1 ;
-  //
-  // // #delta in Mulder & Pericchi (2018) formula (30) line 1.
+
+  // #delta in Mulder & Pericchi (2018) formula (30) line 1.
   int deltaMP = nu - k + 1 ;
 
   // Psi update
@@ -2683,7 +2684,7 @@ Rcpp::List missing_copula(arma::mat Y,
 
   arma::uvec index = find(Y_missing == 1);
 
-  int n_na = index.n_elem;
+  //No more use:  int n_na = index.n_elem;
 
   int nu = 1/ epsilon;
 

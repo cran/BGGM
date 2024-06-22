@@ -28,31 +28,15 @@ document.addEventListener('DOMContentLoaded', function(e) {
   }
 });
 </script>
-<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
-// v0.0.1
-// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
-
-document.addEventListener('DOMContentLoaded', function() {
-  const codeList = document.getElementsByClassName("sourceCode");
-  for (var i = 0; i < codeList.length; i++) {
-    var linkList = codeList[i].getElementsByTagName('a');
-    for (var j = 0; j < linkList.length; j++) {
-      if (linkList[j].innerHTML === "") {
-        linkList[j].setAttribute('aria-hidden', 'true');
-      }
-    }
-  }
-});
-</script>
 
 <style type="text/css">
-  code{white-space: pre-wrap;}
-  span.smallcaps{font-variant: small-caps;}
-  span.underline{text-decoration: underline;}
-  div.column{display: inline-block; vertical-align: top; width: 50%;}
-  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-  ul.task-list{list-style: none;}
-    </style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
 
 
 
@@ -259,12 +243,15 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <div id="TOC">
 <ul>
-<li><a href="#osx">OSX</a>
+<li><a href="#osx" id="toc-osx">OSX</a>
 <ul>
-<li><a href="#error-1-missing-a-fortran-compiler">Error 1: Missing a Fortran Compiler</a></li>
-<li><a href="#error-2-outdated-r-andor-r-studio">Error 2: Outdated R and/or R-studio</a></li>
-<li><a href="#error-3-xcode-missing">Error 3: Xcode missing</a></li>
-<li><a href="#github-issues">GitHub Issues</a></li>
+<li><a href="#error-1-missing-a-fortran-compiler" id="toc-error-1-missing-a-fortran-compiler">Error 1: Missing a Fortran
+Compiler</a></li>
+<li><a href="#error-2-outdated-r-andor-r-studio" id="toc-error-2-outdated-r-andor-r-studio">Error 2: Outdated R and/or
+R-studio</a></li>
+<li><a href="#error-3-xcode-missing" id="toc-error-3-xcode-missing">Error 3: Xcode missing</a></li>
+<li><a href="#github-issues" id="toc-github-issues">GitHub
+Issues</a></li>
 </ul></li>
 </ul>
 </div>
@@ -277,21 +264,27 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <pre><code>E&gt; ld: warning: directory not found for option &#39;-L/usr/local/gfortran/lib&#39;
 E&gt; ld: library not found for -lgfortran
 E&gt; clang: error: linker command failed with exit code 1 (use -v to see invocation)</code></pre>
-<p>This indicates that the fortran compiler is missing. This can can be installed <a href="https://github.com/fxcoudert/gfortran-for-macOS/releases/tag/8.2?fbclid=IwAR2SyHWB2BzFcY7bpHYW8VzNvlDsy4Gw1QxUMueXB3H0fXicCWoMbE7Ypac">here</a> (the <code>.dmg</code> file).</p>
+<p>This indicates that the fortran compiler is missing. This can can be
+installed <a href="https://github.com/fxcoudert/gfortran-for-macOS/releases/tag/8.2?fbclid=IwAR2SyHWB2BzFcY7bpHYW8VzNvlDsy4Gw1QxUMueXB3H0fXicCWoMbE7Ypac">here</a>
+(the <code>.dmg</code> file).</p>
 </div>
 <div id="error-2-outdated-r-andor-r-studio" class="section level2">
 <h2>Error 2: Outdated R and/or R-studio</h2>
-<p>Typically the above has solved the issue. If not, then an additional error could be</p>
+<p>Typically the above has solved the issue. If not, then an additional
+error could be</p>
 <pre><code>Error: (converted from warning) Setting LC_CTYPE failed, using &quot;C&quot;</code></pre>
-<p>This was solved by updating both R and R-studio. More information can be found <a href="https://stackoverflow.com/questions/9689104/installing-r-on-mac-warning-messages-setting-lc-ctype-failed-using-c?fbclid=IwAR0DSaPeWOvRyfIsCx4Tjvz9-jZUh2ySXQIHnzqwbqL2_idfPlFF3j6mOe8">here</a>.</p>
+<p>This was solved by updating both R and R-studio. More information can
+be found <a href="https://stackoverflow.com/questions/9689104/installing-r-on-mac-warning-messages-setting-lc-ctype-failed-using-c?fbclid=IwAR0DSaPeWOvRyfIsCx4Tjvz9-jZUh2ySXQIHnzqwbqL2_idfPlFF3j6mOe8">here</a>.</p>
 </div>
 <div id="error-3-xcode-missing" class="section level2">
 <h2>Error 3: Xcode missing</h2>
-<p>If that does not work, then perhaps <code>Xcode</code> is missing. This can be installed at the “Mac App Store”.</p>
+<p>If that does not work, then perhaps <code>Xcode</code> is missing.
+This can be installed at the “Mac App Store”.</p>
 </div>
 <div id="github-issues" class="section level2">
 <h2>GitHub Issues</h2>
-<p>The following are links to issues on github for troubleshooting installation of <strong>BGGM</strong> on OSX.</p>
+<p>The following are links to issues on github for troubleshooting
+installation of <strong>BGGM</strong> on OSX.</p>
 <ul>
 <li><a href="https://github.com/donaldRwilliams/BGGM/issues/26">https://github.com/donaldRwilliams/BGGM/issues/26</a>(closed)</li>
 </ul>

@@ -332,9 +332,19 @@ compare_predict_helper <- function(x, ci_width){
                                   interval), 3)
 }
 
-# delta give prior_sd
+## delta_solve takes prior_sd
+## prior_sd is in refernce to a the sd of the beta distribution with Beta(delta/2, delta/2)
+## Its SD = sqrt((d/2)*(d/2) / (((d/2)+(d/2))^2*((d/2)+(d/2)+1)));
+##     SD = 1/(2*sqrt(d+1))
+## Solving for d (delta):
+##      d = (1/(2*SD))^2 -1
+## Problem: with SD greater than sqrt(1/8) approx 0.35, d goes below 1 and beta density accumulates at the margins
+##          With SD greater than 0.5, d is negative
+## Solution: limit user input to [0,0.5]
+
 delta_solve = function(x){
-  (x^2)^-1 - 1
+  if(x <= 0 || x > sqrt(1/8) ) stop("Error: \nPrior_sd must be between 0 and sqrt(1/8) approx. 0.353, to ensure that delta is not less than 1.\nFor delta = 1, set prior_sd to sqrt(1/8)\nFor delta = 2, set prior_sd to sqrt(1/12).")
+  (1/(2*x))^2 - 1
 }
 
 # fisher z to r

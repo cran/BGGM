@@ -1,4 +1,4 @@
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  # need the developmental version
 #  if (!requireNamespace("remotes")) {
 #    install.packages("remotes")
@@ -7,7 +7,7 @@
 #  # install from github
 #  remotes::install_github("donaldRwilliams/BGGM")
 
-## ---- warning =FALSE, message=FALSE-------------------------------------------
+## ----warning =FALSE, message=FALSE--------------------------------------------
 # need these packages
 library(BGGM)
 library(ggplot2)
@@ -17,7 +17,7 @@ library(networktools)
 # data
 Y <- ptsd[,1:7]
 
-## ---- message=FALSE, warning=FALSE, eval=FALSE--------------------------------
+## ----message=FALSE, warning=FALSE, eval=FALSE---------------------------------
 #  library(BGGM)
 #  
 #  # copula ggm
@@ -29,7 +29,7 @@ f <- function(x,...){
   networktools::expectedInf(x,...)$step1
 }
 
-## ---- eval = FALSE, message=FALSE, results='hide'-----------------------------
+## ----eval = FALSE, message=FALSE, results='hide'------------------------------
 #  # iter = 250 for demonstrative purposes
 #  # (but note even 1000 iters takes less than 1 second)
 #  # compute
@@ -57,7 +57,7 @@ f <- function(x,...){
 #  #>     7     0.698   0.098   0.521   0.878
 #  #> ---
 
-## ---- eval = FALSE, results='hide'--------------------------------------------
+## ----eval = FALSE, results='hide'---------------------------------------------
 #  net_stat <- roll_your_own(object = fit,
 #                            FUN = f,
 #                            select = TRUE,
@@ -83,10 +83,10 @@ f <- function(x,...){
 #  #>     7     0.247   0.081   0.088   0.412
 #  #> ---
 
-## ---- message=FALSE, eval=FALSE-----------------------------------------------
+## ----message=FALSE, eval=FALSE------------------------------------------------
 #  plot(net_stat)
 
-## ---- eval = FALSE, message=FALSE, results='hide'-----------------------------
+## ----eval = FALSE, message=FALSE, results='hide'------------------------------
 #  # clusters
 #  communities <- substring(colnames(Y), 1, 1)
 #  
@@ -122,13 +122,13 @@ f <- function(x,...){
 #  #>     7     0.628   0.166   0.400   1.025
 #  #> ---
 
-## ---- message = FALSE, eval=FALSE---------------------------------------------
+## ----message = FALSE, eval=FALSE----------------------------------------------
 #  plot(net_stat,
 #       fill = "lightblue") +
 #    ggtitle("Bridge Strength") +
 #    xlab("Score")
 
-## ---- eval = FALSE, message=FALSE, results='hide'-----------------------------
+## ----eval = FALSE, message=FALSE, results='hide'------------------------------
 #  # clusters
 #  communities <- substring(colnames(Y), 1, 1)
 #  
@@ -158,6 +158,6 @@ f <- function(x,...){
 #  #>      0.261   0.124   -0.01   0.469
 #  #> ---
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  hist(net_stat$results, main = "Assortment")
 

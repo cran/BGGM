@@ -10,7 +10,7 @@ ggm_compare_estimate(
   type = "continuous",
   mixed_type = NULL,
   analytic = FALSE,
-  prior_sd = 0.5,
+  prior_sd = sqrt(1/12),
   iter = 5000,
   impute = TRUE,
   progress = TRUE,
@@ -36,7 +36,7 @@ for continous data. Note that if \code{type = "mixed"} and \code{analytic = TRUE
 automatically be treated as continuous.}
 
 \item{prior_sd}{The scale of the prior distribution (centered at zero), in reference to a beta distribtuion
-(defaults to 0.50).
+(defaults to sqrt(1/12)).
 See note for further details.}
 
 \item{iter}{Number of iterations (posterior samples; defaults to 5000).}
@@ -158,8 +158,8 @@ test for comparing each variable in the network \insertCite{Williams2019;textual
 \donttest{
 # note: iter = 250 for demonstrative purposes
 
-# data
-Y <- bfi
+# data: Remove missings for "ordinal"
+Y <- bfi[complete.cases(bfi),]
 
 # males and females
 Ymale <- subset(Y, gender == 1,
@@ -174,7 +174,6 @@ Yfemale <- subset(Y, gender == 2,
 fit <- ggm_compare_estimate(Ymale,  Yfemale,
                            type = "ordinal",
                            iter = 250,
-                           prior_sd = 0.25,
                            progress = FALSE)
 
 ###########################

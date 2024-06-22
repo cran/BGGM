@@ -22,7 +22,7 @@
 #' @param analytic Logical. Should the analytic solution be computed (default is \code{FALSE})?
 #'
 #' @param prior_sd Scale of the prior distribution, approximately the standard deviation of a beta distribution
-#' (defaults to 0.50).
+#' (defaults to sqrt(1/12)).
 #'
 #' @param iter Number of iterations (posterior samples; defaults to 5000).
 #'
@@ -203,11 +203,11 @@ estimate  <- function(Y,
                       type = "continuous",
                       mixed_type = NULL,
                       analytic = FALSE,
-                      prior_sd = 0.25,
+                      prior_sd = sqrt(1/12),
                       iter = 5000,
                       impute = FALSE,
                       progress = TRUE,
-                      seed = 1,
+                      seed = NULL,
                       ...){
 
   # temporary warning until missing data is fully implemented
@@ -220,10 +220,10 @@ estimate  <- function(Y,
     }
   }
 
-  # removed per CRAN (8/12/21)
-  #old <- .Random.seed
-
-  set.seed(seed)
+  ## Random seed unless user provided
+  if(!is.null(seed) ) {
+    set.seed(seed)
+  }
 
   # delta rho ~ beta(delta/2, delta/2)
   delta <- delta_solve(prior_sd)
@@ -506,8 +506,16 @@ estimate  <- function(Y,
 
         } else {
 
-          Y <- na.omit(Y)
-
+          ## check if Y contains NA
+          contains_na <- any(is.na(Y))
+          if( contains_na ) {
+            Y <- na.omit(Y)
+            ## Reassign values when NA are present
+            temp_helper <- rank_helper(Y)
+            rank_vars$z0_start <- temp_helper$z0_start
+            rank_vars$levels <- temp_helper$levels
+            warning("Observed variables contain missings:\n  No imputation, cases are deleted listwise." )
+          }
 
 
           post_samp <- .Call(

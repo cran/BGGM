@@ -1,4 +1,4 @@
-## ---- eval = FALSE, message=FALSE---------------------------------------------
+## ----eval = FALSE, message=FALSE----------------------------------------------
 #  # need the developmental version
 #  if (!requireNamespace("remotes")) {
 #    install.packages("remotes")
@@ -8,10 +8,10 @@
 #  remotes::install_github("donaldRwilliams/BGGM")
 #  library(BGGM)
 
-## ---- echo=FALSE, message=FALSE-----------------------------------------------
+## ----echo=FALSE, message=FALSE------------------------------------------------
 library(BGGM)
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  # data
 #  Y <- ptsd[,1:10]
 #  
@@ -19,7 +19,7 @@ library(BGGM)
 #  # + 1 makes first category a 1
 #  fit <- estimate(Y + 1, type = "ordinal")
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  convergence(fit, print_names = TRUE)
 #  
 #  #>  [1] "B1--B2"         "B1--B3"         "B2--B3"         "B1--B4"         "B2--B4"         "B3--B4"         "B1--B5"
@@ -31,16 +31,16 @@ library(BGGM)
 #  #> [43] "C2--D3"         "D1--D3"         "D2--D3"         "B1_(Intercept)" "B2_(Intercept)" "B3_(Intercept)" "B4_(Intercept)"
 #  #> [50] "B5_(Intercept)" "C1_(Intercept)" "C2_(Intercept)" "D1_(Intercept)" "D2_(Intercept)" "D3_(Intercept)"
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  convergence(fit, param = "B1--B2", type = "acf")
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  # sim time series
 #  ts.sim <- arima.sim(list(order = c(1,1,0), ar = 0.7), n = 200)
 #  
 #  acf(ts.sim)
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  # extract samples
 #  samps <- fit$post_samp$pcors
 #  
@@ -62,6 +62,6 @@ library(BGGM)
 #  # check thinned
 #  convergence(fit, param = "B1--B2", type = "acf")
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  convergence(fit, param = "B1--B2", type = "trace")
 

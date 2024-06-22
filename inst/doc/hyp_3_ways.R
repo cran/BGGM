@@ -1,4 +1,4 @@
-## ---- eval = FALSE, message=FALSE---------------------------------------------
+## ----eval = FALSE, message=FALSE----------------------------------------------
 #  # need the developmental version
 #  if (!requireNamespace("remotes")) {
 #    install.packages("remotes")

@@ -23,7 +23,7 @@
 #'                 (currently not implemented)
 #'
 #' @param prior_sd Scale of the prior distribution, approximately the standard deviation
-#'                 of a beta distribution (defaults to 0.25).
+#'                 of a beta distribution (defaults to sqrt(1/12)).
 #'
 #' @param iter Number of iterations (posterior samples; defaults to 5000).
 #'
@@ -167,11 +167,11 @@ explore <- function(Y,
                     type = "continuous",
                     mixed_type = NULL,
                     analytic = FALSE,
-                    prior_sd = 0.25,
+                    prior_sd = sqrt(1/12),
                     iter = 5000,
                     progress = TRUE,
                     impute = FALSE,
-                    seed = 1, ...){
+                    seed = NULL, ...){
 
   # temporary warning until missing data is fully implemented
   if(!type %in% c("continuous", "mixed")){
@@ -184,11 +184,13 @@ explore <- function(Y,
     }
   }
 
-  # removed per CRAN (8/12/21)
-  #old <- .Random.seed
-
   set.seed(seed)
+  ## Random seed unless user provided
+  if(!is.null(seed) ) {
+    set.seed(seed)
+  }
 
+  
   dot_dot_dot <- list(...)
 
   eps <- 0.01
@@ -502,9 +504,17 @@ explore <- function(Y,
 
     }
 
-   # matrix dimensions for prior
-    Y_dummy <- matrix(rnorm( 10 * 3 ),
-                    nrow = 10, ncol = 3)
+    ## matrix dimensions for prior
+    ## Old:
+    ## Y_dummy <- matrix(rnorm( 10 * 3 ),
+    ##                  nrow = 10, ncol = 3)
+
+    ## Replaced with:
+    ## 10 times as many rows as columns
+    n_row = ncol(Y) * 10
+    Y_dummy <- matrix(rnorm( n_row * ncol(Y) ),
+                      nrow = n_row, ncol = ncol(Y))
+    ## Probably not necessary to scale up Y dim as k=3 was good enough approx.
 
     if(isTRUE(progress)){
 
@@ -520,7 +530,7 @@ explore <- function(Y,
                       delta = delta,
                       epsilon = eps,
                       prior_only = 1,
-                      explore = 1,
+                      explore = 0,  ## with explore = 0,  k takes number of Y columns instead of k = 3 
                       progress = progress)
 
     if(isTRUE(progress)){

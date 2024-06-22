@@ -11,7 +11,7 @@
 #' @param hypothesis Character string. The hypothesis (or hypotheses) to be tested. See details.
 #'
 #' @param prior_sd Numeric. Scale of the prior distribution, approximately the standard deviation
-#'                 of a beta distribution (defaults to 0.25).
+#'                 of a beta distribution (defaults to sqrt(1/12)).
 #'
 #' @param formula An object of class \code{\link[stats]{formula}}. This allows for including
 #' control variables in the model (e.g.,, \code{~ gender * education}).
@@ -213,14 +213,14 @@
 #' }
 #'@export
 confirm <- function(Y, hypothesis,
-                    prior_sd = 0.25,
+                    prior_sd = sqrt(1/12),
                     formula = NULL,
                     type = "continuous",
                     mixed_type = NULL,
                     iter = 25000,
                     progress = TRUE,
                     impute = TRUE,
-                    seed = 1, ...){
+                    seed = NULL, ...){
 
 
   # temporary warning until missing data is fully implemented
@@ -229,10 +229,12 @@ confirm <- function(Y, hypothesis,
                    "currently only implemented for 'continuous' data."))
   }
 
-  # removed per CRAN (8/12/21)
-  # old <- .Random.seed
 
   set.seed(seed)
+  ## Random seed unless user provided
+  if(!is.null(seed) ) {
+    set.seed(seed)
+  }
 
   priorprob <- 1
 

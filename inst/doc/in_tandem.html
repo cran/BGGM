@@ -28,31 +28,15 @@ document.addEventListener('DOMContentLoaded', function(e) {
   }
 });
 </script>
-<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
-// v0.0.1
-// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
-
-document.addEventListener('DOMContentLoaded', function() {
-  const codeList = document.getElementsByClassName("sourceCode");
-  for (var i = 0; i < codeList.length; i++) {
-    var linkList = codeList[i].getElementsByTagName('a');
-    for (var j = 0; j < linkList.length; j++) {
-      if (linkList[j].innerHTML === "") {
-        linkList[j].setAttribute('aria-hidden', 'true');
-      }
-    }
-  }
-});
-</script>
 
 <style type="text/css">
-  code{white-space: pre-wrap;}
-  span.smallcaps{font-variant: small-caps;}
-  span.underline{text-decoration: underline;}
-  div.column{display: inline-block; vertical-align: top; width: 50%;}
-  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-  ul.task-list{list-style: none;}
-    </style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
 
 
 
@@ -252,20 +236,24 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">In Tandem: Confirmatory and Exploratory Testing</h1>
+<h1 class="title toc-ignore">In Tandem: Confirmatory and Exploratory
+Testing</h1>
 <h4 class="author">Donny Williams</h4>
 <h4 class="date">5/23/2020</h4>
 
 
 <div id="TOC">
 <ul>
-<li><a href="#external-link"><i class="fas fa-external-link-square-alt"></i> <span>External Link</span></a></li>
+<li><a href="#external-link" id="toc-external-link"><i class="fas fa-external-link-square-alt"></i>
+External Link</a></li>
 </ul>
 </div>
 
-<p>The blog post, “Tutorial: Bayesian Testing of Central Structures in Psychological Networks,” is hosted on a different website.</p>
+<p>The blog post, “Tutorial: Bayesian Testing of Central Structures in
+Psychological Networks,” is hosted on a different website.</p>
 <div id="external-link" class="section level1">
-<h1><i class="fas fa-external-link-square-alt"></i> <a href="https://josue.rbind.io/post/tutorial-bayesian-testing/">External Link</a></h1>
+<h1><i class="fas fa-external-link-square-alt"></i> <a href="https://josue.rbind.io/post/tutorial-bayesian-testing/">External
+Link</a></h1>
 </div>
 
 

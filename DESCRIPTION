@@ -1,8 +1,8 @@
 Package: BGGM
 Type: Package
 Title: Bayesian Gaussian Graphical Models
-Version: 2.1.1
-Date: 2024-02-22
+Version: 2.1.2
+Date: 2024-06-21
 Authors@R: c(person("Donald", "Williams", email = "drwwilliams@ucdavis.edu", role = "aut"),
              person("Joris", "Mulder", email = "J.Mulder3@uvt.nl", role = "aut"),
 	     person("Philippe", "Rast", email = "rast.ph@gmail.com", role = c("aut", "cre")))
@@ -32,10 +32,10 @@ RdMacros: Rdpack
 BugReports: https://github.com/donaldRwilliams/BGGM/issues
 Config/testthat/edition: 3
 NeedsCompilation: yes
-Packaged: 2024-02-23 02:03:35 UTC; philippe
+Packaged: 2024-06-22 05:30:01 UTC; philippe
 Author: Donald Williams [aut],
   Joris Mulder [aut],
   Philippe Rast [aut, cre]
 Maintainer: Philippe Rast <rast.ph@gmail.com>
 Repository: CRAN
-Date/Publication: 2024-02-23 08:00:06 UTC
+Date/Publication: 2024-06-22 06:20:02 UTC

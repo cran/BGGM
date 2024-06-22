@@ -1,4 +1,4 @@
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  # need the developmental version
 #  if (!requireNamespace("remotes")) {
 #    install.packages("remotes")
@@ -8,7 +8,7 @@
 #  remotes::install_github("donaldRwilliams/BGGM")
 #  
 
-## ---- warning =FALSE, message=FALSE-------------------------------------------
+## ----warning =FALSE, message=FALSE--------------------------------------------
 # need these packages
 library(BGGM)
 library(ggplot2)
@@ -58,7 +58,7 @@ obs <- f(Yg1, Yg2)
 # observed
 obs
 
-## ---- message=FALSE, results='hide'-------------------------------------------
+## ----message=FALSE, results='hide'--------------------------------------------
 ppc <- BGGM::ggm_compare_ppc(Yg1, Yg2, 
                        FUN = f, 
                        custom_obs = obs, 
@@ -68,10 +68,10 @@ ppc <- BGGM::ggm_compare_ppc(Yg1, Yg2,
 ## -----------------------------------------------------------------------------
 ppc
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  plot(ppc)
 
-## ---- echo=FALSE, message=FALSE, warning=FALSE--------------------------------
+## ----echo=FALSE, message=FALSE, warning=FALSE---------------------------------
 plot(ppc, col_critical = "lightblue", 
      col_noncritical = "lightblue")[[1]] +
   xlab("Predictive Correlation")
@@ -103,7 +103,7 @@ obs <- f(Yg1, Yg2)
 # observed
 obs
 
-## ---- message=FALSE, results='hide'-------------------------------------------
+## ----message=FALSE, results='hide'--------------------------------------------
 ppc <- BGGM::ggm_compare_ppc(Yg1, Yg2, 
                        FUN = f, 
                        custom_obs = obs, 
@@ -112,7 +112,7 @@ ppc <- BGGM::ggm_compare_ppc(Yg1, Yg2,
 ## -----------------------------------------------------------------------------
 ppc
 
-## ---- message=FALSE, warning=FALSE--------------------------------------------
+## ----message=FALSE, warning=FALSE---------------------------------------------
 plot(ppc)
 
 ## -----------------------------------------------------------------------------
@@ -141,7 +141,7 @@ obs <- f(Yg1, Yg2)
 # observed
 obs
 
-## ---- message=FALSE, results='hide'-------------------------------------------
+## ----message=FALSE, results='hide'--------------------------------------------
 ppc <- BGGM::ggm_compare_ppc(Yg1, Yg2, 
                        FUN = f, 
                        custom_obs = obs, 
@@ -188,7 +188,7 @@ obs <- f(Yg1, Yg2)
 # observed
 obs
 
-## ---- message=FALSE, results='hide'-------------------------------------------
+## ----message=FALSE, results='hide'--------------------------------------------
 ppc <- BGGM::ggm_compare_ppc(Yg1, Yg2, 
                        FUN = f, 
                        custom_obs = obs, 
@@ -221,7 +221,7 @@ obs <- f(Yg1, Yg2)
 # observed
 obs
 
-## ---- message=FALSE, results='hide'-------------------------------------------
+## ----message=FALSE, results='hide'--------------------------------------------
 ppc <- BGGM:::ggm_compare_ppc(Yg1, Yg2, 
                        FUN = f, 
                        custom_obs = obs, 

@@ -143,8 +143,8 @@ Rcpp::List internal_missing_gaussian(arma::mat Y,
       arma::vec pred_miss = pred(index_j);
 
       for(int i = 0; i < n_missing; ++i){
-        arma::vec ppc_i = Rcpp::rnorm(1,  pred(index_j[i]), arma::conv_to<double>::from(sd_j));
-        Y.col(j).row(index_j[i]) = arma::conv_to<double>::from(ppc_i);
+        arma::vec ppc_i = Rcpp::rnorm(1,  pred(index_j[i]), arma::as_scalar(sd_j));
+        Y.col(j).row(index_j[i]) = arma::as_scalar(ppc_i);
       }
     }
 
@@ -227,9 +227,9 @@ Rcpp::List missing_gaussian(arma::mat Y,
       for(int i = 0; i < n_missing; ++i){
 
         arma::vec ppd_i = Rcpp::rnorm(1,  pred(index_j[i]),
-                                      arma::conv_to<double>::from(sd_j));
+                                      arma::as_scalar(sd_j));
 
-        Y.col(j).row(index_j[i]) = arma::conv_to<double>::from(ppd_i);
+        Y.col(j).row(index_j[i]) = arma::as_scalar(ppd_i);
 
       }
 
@@ -711,9 +711,9 @@ Rcpp::List trunc_mvn(arma::mat mu,
 
   for(int i = 0; i < T; ++i){
 
-    a2.row(i) = a.col(arma::conv_to<int>::from(y.row(i)));
+    a2.row(i) = a.col(arma::as_scalar(y.row(i)));
 
-    b2.row(i) = b.col(arma::conv_to<int>::from(y.row(i)));
+    b2.row(i) = b.col(arma::as_scalar(y.row(i)));
 
   }
 
@@ -942,7 +942,7 @@ Rcpp::List mv_binary(arma::mat Y,
     for(int i = 0; i < k; ++i){
 
       D.row(i).col(i) = sqrt(1 / R::rgamma((delta + k - 1) / 2,
-                   2 / arma::conv_to<double>::from(Rinv.slice(0).row(i).col(i))));
+                   2 / arma::as_scalar(Rinv.slice(0).row(i).col(i))));
     }
 
     w = z0.slice(0) * D;
@@ -1236,7 +1236,7 @@ Rcpp::List mv_ordinal_cowles(arma::mat Y,
 
     for(int i = 0; i < k; ++i){
       D.row(i).col(i) = sqrt(1 / R::rgamma((deltaMP + k - 1) / 2,
-                   2 / arma::conv_to<double>::from(Rinv.slice(0).row(i).col(i))));
+                   2 / arma::as_scalar(Rinv.slice(0).row(i).col(i))));
     }
 
     // expand latent data
@@ -1489,7 +1489,7 @@ Rcpp::List mv_ordinal_albert(arma::mat Y,
             arma::vec lb = {select_col(z0.slice(0), i).elem(find(Y.col(i) == j)).max(), thresh.slice(i)(s-1, j-1) };
             arma::vec ub = {select_col(z0.slice(0), i).elem(find(Y.col(i) == j+1)).min(), thresh.slice(i)(s-1, j+1) };
             arma::vec v = Rcpp::runif(1,  lb.max(), ub.min());
-            thresh.slice(i).row(s).col(j) =  arma::conv_to<double>::from(v);
+            thresh.slice(i).row(s).col(j) =  arma::as_scalar(v);
 
           }
         }
@@ -1512,7 +1512,7 @@ Rcpp::List mv_ordinal_albert(arma::mat Y,
 
     for(int i = 0; i < k; ++i){
       D.row(i).col(i) = sqrt(1 / R::rgamma((delta + k - 1) / 2,
-                   2 / arma::conv_to<double>::from(Rinv.slice(0).row(i).col(i))));
+                   2 / arma::as_scalar(Rinv.slice(0).row(i).col(i))));
     }
 
     // expand latent data
@@ -1720,8 +1720,8 @@ Rcpp::List  copula(arma::mat z0_start,
           for(int l = 0; l < r_levels; ++l){
 
             z0.slice(0).col(i).row(temp1(l)) = R::qnorm(R::runif(
-              R::pnorm(arma::conv_to<double>::from(lb),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE),
-              R::pnorm(arma::conv_to<double>::from(ub),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE)),
+              R::pnorm(arma::as_scalar(lb),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE),
+              R::pnorm(arma::as_scalar(ub),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE)),
               mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE);
           }
         }
@@ -1826,7 +1826,7 @@ Rcpp::List predictability_helper(arma::mat Y,
       arma::vec ppc_j = Rcpp::rnorm(1, mu[j], stddev(mu - y));
 
       // y rep
-      ppc.row(j) = arma::conv_to<double>::from(ppc_j);
+      ppc.row(j) = arma::as_scalar(ppc_j);
 
     }
 
@@ -1951,8 +1951,8 @@ Rcpp::List ppc_helper_nodewise_fast(arma::cube Theta,
       arma::mat var_1 = var(pred_1);
       arma::mat var_2 = var(pred_2);
 
-      kl(s, j) = (KL_univariate(arma::conv_to<float>::from(var_1), arma::conv_to<float>::from(var_2)) +
-        KL_univariate(arma::conv_to<float>::from(var_2), arma::conv_to<float>::from(var_1)))  * 0.5;
+      kl(s, j) = (KL_univariate(arma::as_scalar(var_1), arma::as_scalar(var_2)) +
+        KL_univariate(arma::as_scalar(var_2), arma::as_scalar(var_1)))  * 0.5;
 
     }
   }
@@ -2081,7 +2081,7 @@ float correlation(arma::mat Rinv_1,
 
   arma::mat cor_nets = cor(r_1, r_2);
 
-  float cors = arma::conv_to<float>::from(cor_nets);
+  float cors = arma::as_scalar(cor_nets);
 
   return cors;
 
@@ -2793,8 +2793,8 @@ Rcpp::List missing_copula(arma::mat Y,
           for(int l = 0; l < r_levels; ++l){
 
             z0.slice(0).col(i).row(temp1(l)) = R::qnorm(R::runif(
-              R::pnorm(arma::conv_to<double>::from(lb),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE),
-              R::pnorm(arma::conv_to<double>::from(ub),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE)),
+              R::pnorm(arma::as_scalar(lb),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE),
+              R::pnorm(arma::as_scalar(ub),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE)),
               mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE);
           }
 
@@ -2951,8 +2951,8 @@ Rcpp::List missing_copula_data(arma::mat Y,
           for(int l = 0; l < r_levels; ++l){
 
             z0.slice(0).col(i).row(temp1(l)) = R::qnorm(R::runif(
-              R::pnorm(arma::conv_to<double>::from(lb),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE),
-              R::pnorm(arma::conv_to<double>::from(ub),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE)),
+              R::pnorm(arma::as_scalar(lb),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE),
+              R::pnorm(arma::as_scalar(ub),  mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE)),
               mm(temp1(l)), sqrt(ss(0)), TRUE, FALSE);
           }
         }

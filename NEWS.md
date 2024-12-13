@@ -1,4 +1,8 @@
-# BGGM 2.1.3
+# BGGM 2.1.4
+- Addressed CRAN check error when building vignettes (removed example in bggm_missing.R -- will put it back once it's accepted to CRAN). 
+- Downgraded required R version to 4.0.0
+
+# BGGM 2.1.3 
 - Replaced dprecated armadillo function `conv_to<>::from` with `as_scalar`
 - `prior_sd`: Adjusted computation of delta. Also, changed default value for estimation: sqrt(1/3) resulting in delta = 2. For model testing default is more tight, at `sigma_sd` = 0.5, resulting in delta = 3. 
 - `prior_sd` is now limited to range 0 -- sqrt(1/2)
